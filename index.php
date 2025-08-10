@@ -92,6 +92,11 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
                 <button onclick="openGlobalSearchModal()" class="inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg border border-purple-400/40 bg-black/20 text-purple-200 hover:bg-black/30 text-xs sm:text-sm" title="Buscar en todos los cursos">
                     <i class="fas fa-search"></i><span class="hidden sm:inline">Buscador Global</span>
                 </button>
+                <!-- Botón de progreso de importaciones -->
+                <button id="queueProgressBtn" onclick="openQueueProgressModal()" class="relative inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg border border-orange-400/40 bg-black/20 text-orange-200 hover:bg-black/30 text-xs sm:text-sm hidden" title="Progreso de importaciones">
+                    <i class="fas fa-tasks"></i><span class="hidden sm:inline">Progreso</span>
+                    <span id="queueBadge" class="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center hidden">0</span>
+                </button>
                 <button onclick="openFolderPicker()" class="inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg border border-blue-400/40 bg-black/20 text-blue-200 hover:bg-black/30 text-xs sm:text-sm" title="Importar carpeta(s)">
                     <i class="fas fa-folder-open"></i><span class="hidden sm:inline">Importar Carpeta</span>
                 </button>
@@ -143,7 +148,7 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
                             </div>
                         </div>
                         <div class="mt-6">
-                            <button id="startFolderImportBtn" onclick="startFolderImport()" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors"><i class="fas fa-play mr-2"></i>Iniciar Importación</button>
+                            <button id="startFolderImportBtn" onclick="addToImportQueue()" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors"><i class="fas fa-plus mr-2"></i>Añadir a Cola</button>
                             <p class="text-gray-400 text-xs mt-2">Subidas simultáneas: máx. 5</p>
                         </div>
                     </div>
@@ -159,6 +164,98 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
                         <div id="globalProgressBar" class="bg-green-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
                     </div>
                     <div id="fileProgressList" class="space-y-2 text-sm"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Progreso de Cola v2.0 -->
+    <div id="queueProgressModal" class="fixed inset-0 bg-black/60 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="glass-dark rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden">
+                <!-- Header del modal -->
+                <div class="bg-black/30 p-4 border-b border-white/10 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <h3 class="text-xl font-bold text-white">
+                            <i class="fas fa-tasks mr-2"></i>Cola de Importaciones
+                        </h3>
+                        <div id="queueStats" class="flex items-center gap-4 text-sm">
+                            <span class="bg-blue-500/20 text-blue-200 px-2 py-1 rounded" id="queueStatsPending">0 en cola</span>
+                            <span class="bg-green-500/20 text-green-200 px-2 py-1 rounded" id="queueStatsCompleted">0 completados</span>
+                            <span class="bg-red-500/20 text-red-200 px-2 py-1 rounded" id="queueStatsErrors">0 errores</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="queuePauseBtn" onclick="toggleQueuePause()" class="text-white/80 bg-yellow-600/80 hover:bg-yellow-600 rounded px-3 py-1 text-sm hidden">
+                            <i class="fas fa-pause"></i> Pausar
+                        </button>
+                        <button id="queueResumeBtn" onclick="toggleQueuePause()" class="text-white/80 bg-green-600/80 hover:bg-green-600 rounded px-3 py-1 text-sm hidden">
+                            <i class="fas fa-play"></i> Reanudar
+                        </button>
+                        <button onclick="showErrorReport()" class="text-white/80 bg-red-600/80 hover:bg-red-600 rounded px-3 py-1 text-sm">
+                            <i class="fas fa-exclamation-triangle"></i> Informe
+                        </button>
+                        <button onclick="clearCompletedJobs()" class="text-white/80 bg-gray-600/80 hover:bg-gray-600 rounded px-3 py-1 text-sm">
+                            <i class="fas fa-broom"></i> Limpiar
+                        </button>
+                        <button onclick="closeQueueProgressModal()" class="text-white/70 hover:text-white">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Controles globales -->
+                <div class="bg-black/20 p-3 border-b border-white/10 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <button onclick="cancelAllJobs()" class="bg-red-600/80 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
+                            <i class="fas fa-stop"></i> Cancelar Todo
+                        </button>
+                        <div class="text-sm text-gray-300">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Arrastra para reordenar • Clic derecho para opciones
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-gray-300">
+                        <span id="queueGlobalProgress">Preparando...</span>
+                        <div class="w-24 bg-gray-700 rounded-full h-2">
+                            <div id="queueGlobalProgressBar" class="bg-orange-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de trabajos -->
+                <div id="queueJobsList" class="p-4 space-y-3 overflow-y-auto" style="max-height: 60vh;">
+                    <div class="text-center text-gray-400 py-8">
+                        <i class="fas fa-inbox text-4xl mb-2"></i>
+                        <p>No hay importaciones en la cola</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Informe de Errores -->
+    <div id="errorReportModal" class="fixed inset-0 bg-black/60 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="glass-dark rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+                <div class="bg-black/30 p-4 border-b border-white/10 flex items-center justify-between">
+                    <h3 class="text-xl font-bold text-white">
+                        <i class="fas fa-exclamation-triangle mr-2 text-red-400"></i>Informe de Errores
+                    </h3>
+                    <button onclick="closeErrorReportModal()" class="text-white/70 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="errorReportContent" class="p-4 overflow-y-auto" style="max-height: 70vh;">
+                    <!-- Contenido dinámico -->
+                </div>
+                <div class="bg-black/20 p-3 border-t border-white/10 flex justify-end gap-2">
+                    <button onclick="exportErrorReport()" class="bg-blue-600/80 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm">
+                        <i class="fas fa-download mr-1"></i> Exportar
+                    </button>
+                    <button onclick="closeErrorReportModal()" class="bg-gray-600/80 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm">
+                        Cerrar
+                    </button>
                 </div>
             </div>
         </div>
@@ -341,6 +438,7 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
     </div>
 
     <script src="js/dashboard.js"></script>
+    <script src="js/import-queue.js"></script>
     <script>
         // Modal búsqueda global (dashboard)
         function openGlobalSearchModal() {
@@ -786,136 +884,83 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
             renderSectionsPreview();
         }
 
-        window.startFolderImport = async function () {
+        // Nueva función para añadir trabajos a la cola
+        window.addToImportQueue = function () {
             const mode = document.querySelector('input[name="courseMode"]:checked').value;
-            let cursoId = null;
+            let courseId = null;
+            let courseTitle = '';
 
+            // Validar configuración del curso
             if (mode === 'new') {
-                const title = (document.getElementById('importCourseTitle').value || '').trim();
-                if (!title) { alert('Título del curso requerido'); return; }
-                const fd = new FormData();
-                fd.append('titulo', title);
-                const res = await fetch('api/cursos.php', { method: 'POST', body: fd });
-                const data = await res.json();
-                if (!data.success) { alert(data.message || 'Error creando curso'); return; }
-                cursoId = data.data.id;
-            } else {
-                cursoId = document.getElementById('importCourseSelect').value;
-                if (!cursoId) { alert('Selecciona un curso existente'); return; }
-            }
-
-            // Mapear nombres de sección editados
-            const nameInputs = sectionsPreview.querySelectorAll('.section-name');
-            const sectionRename = new Map();
-            nameInputs.forEach(inp => {
-                const orig = inp.dataset.original;
-                const val = inp.value.trim() || orig;
-                sectionRename.set(orig, val);
-            });
-
-            // Preparar lista de tareas respetando el orden del DOM
-            const tasks = [];
-            const sectionCards = sectionsPreview.querySelectorAll('[data-section]');
-            
-            sectionCards.forEach((card, sectionIndex) => {
-                const sectionName = card.querySelector('.section-name').value.trim();
-                const videoItems = card.querySelectorAll('.file-row');
-                
-                videoItems.forEach((item, videoIndex) => {
-                    const fileId = item.dataset.fileId;
-                    const file = fileIdToFile.get(fileId);
-                    if (file) {
-                        tasks.push({ 
-                            file, 
-                            section: sectionName,
-                            sectionOrder: sectionIndex + 1,
-                            videoOrder: videoIndex + 1
-                        });
-                    }
-                });
-            });
-
-            // Mostrar panel de progreso
-            configPanel.classList.add('hidden');
-            progressPanel.classList.remove('hidden');
-            fileProgressList.innerHTML = '';
-            const makeRow = (name) => {
-                const row = document.createElement('div');
-                row.className = 'bg-black/20 border border-white/10 rounded p-2 flex items-center justify-between';
-                row.innerHTML = `
-                    <span class="text-gray-200 truncate mr-2">${name}</span>
-                    <span class="text-xs" data-status>pendiente</span>
-                `;
-                return row;
-            };
-            const rows = tasks.map(t => {
-                const r = makeRow(`${t.section} / ${t.file.name}`);
-                fileProgressList.appendChild(r);
-                t.row = r;
-                t.statusEl = r.querySelector('[data-status]');
-                return r;
-            });
-
-            // Subida con concurrencia 5
-            const concurrency = 5;
-            let completed = 0;
-            const updateGlobal = () => {
-                const pct = (completed / tasks.length) * 100;
-                globalProgressBar.style.width = pct + '%';
-                document.title = `CursosMy - ${Math.round(pct)}%`;
-            };
-
-            async function uploadTask(task) {
-                task.statusEl.textContent = 'subiendo...';
-                const form = new FormData();
-                form.append('curso_id', cursoId);
-                form.append('seccion', task.section);
-                form.append('seccion_orden', task.sectionOrder);
-                form.append('video_orden', task.videoOrder);
-                form.append('file', task.file);
-                try {
-                    if (!task.file.size) {
-                        console.warn('[UPLOAD][ZERO_SIZE]', { name: task.file.name, path: task.file.webkitRelativePath });
-                    }
-                    console.log('[UPLOAD][START]', { 
-                        section: task.section, 
-                        sectionOrder: task.sectionOrder, 
-                        videoOrder: task.videoOrder, 
-                        name: task.file.name, 
-                        sizeMB: (task.file.size/1024/1024).toFixed(2) 
-                    });
-                    const res = await fetch('api/upload-single.php', { method: 'POST', body: form });
-                    const text = await res.text();
-                    let data = {};
-                    try { data = JSON.parse(text); } catch (e) {
-                        console.error('[UPLOAD][PARSE_ERROR]', text);
-                    }
-                    if (data.success) {
-                        task.statusEl.textContent = 'completado';
-                        task.row.classList.add('border-green-500/40');
-                        console.log('[UPLOAD][DONE]', { name: task.file.name });
-                    } else {
-                        task.statusEl.textContent = 'error';
-                        task.row.classList.add('border-red-500/40');
-                        console.error('[UPLOAD][ERROR]', { name: task.file.name, status: res.status, data });
-                    }
-                } catch (e) {
-                    task.statusEl.textContent = 'error';
-                    task.row.classList.add('border-red-500/40');
-                    console.error('[UPLOAD][FETCH_ERROR]', e);
-                } finally {
-                    completed++;
-                    updateGlobal();
+                courseTitle = (document.getElementById('importCourseTitle').value || '').trim();
+                if (!courseTitle) { 
+                    alert('Título del curso requerido'); 
+                    return; 
                 }
+            } else {
+                courseId = document.getElementById('importCourseSelect').value;
+                if (!courseId) { 
+                    alert('Selecciona un curso existente'); 
+                    return; 
+                }
+                // Obtener título del curso existente
+                const select = document.getElementById('importCourseSelect');
+                courseTitle = select.options[select.selectedIndex].text;
             }
 
-            // Procesamiento secuencial para respetar el orden
-            for (const task of tasks) {
-                await uploadTask(task);
+            // Recomputar importMap desde DOM para respetar cambios del usuario
+            recomputeImportMapFromDOM();
+            
+            // Validar que hay contenido para importar
+            if (importMap.size === 0) {
+                alert('No hay secciones para importar');
+                return;
             }
 
-            alert('Importación finalizada');
-            window.location.reload();
+            // Crear trabajo en la cola
+            const job = window.importQueue.createJob({
+                courseTitle: courseTitle,
+                courseMode: mode,
+                courseId: courseId,
+                sections: new Map(importMap) // Clonar el Map actual
+            });
+
+            // Mostrar notificación
+            showNotification(`✅ Curso "${courseTitle}" añadido a la cola de importación`, 'success');
+            
+            // Cerrar modal de importación
+            closeFolderImportModal();
+            
+            // Abrir modal de progreso si es el primer trabajo o si el usuario prefiere
+            const stats = window.importQueue.getStats();
+            if (stats.total === 1) {
+                // Primera importación - mostrar automáticamente el progreso
+                setTimeout(() => {
+                    openQueueProgressModal();
+                }, 500);
+            } else {
+                // Trabajos adicionales - solo mostrar notificación
+                showNotification(`Trabajo añadido a la cola. Total: ${stats.pending + stats.processing} en progreso`, 'info');
+            }
+            
+            // Limpiar estado del modal para la siguiente importación
+            importFiles = [];
+            importMap = new Map();
+            fileIdToFile = new Map();
+            sectionsPreview.innerHTML = '';
+            document.getElementById('importCourseTitle').value = '';
+            document.getElementById('importCourseSelect').value = '';
+            document.querySelector('input[name="courseMode"][value="new"]').checked = true;
+            renderCourseMode();
+            
+            // Mostrar el botón de progreso si no estaba visible
+            if (!queueUI.initialized) initQueueUI();
+        }
+
+        // Función legacy mantenida para compatibilidad (pero modificada para usar cola)
+        window.startFolderImport = function () {
+            // Redirigir a la nueva función
+            addToImportQueue();
         }
 
         // Abrir modal al elegir carpeta
@@ -924,6 +969,579 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
             folderPicker.click();
         }
         // Cuando el usuario selecciona carpeta, js/dashboard.js invoca window.prepareFolderImport(files)
+
+        // === SISTEMA DE COLA v2.0 ===
+        
+        // Variables del sistema de cola
+        let queueUI = {
+            progressBtn: null,
+            badge: null,
+            modal: null,
+            jobsList: null,
+            errorModal: null,
+            initialized: false
+        };
+
+        // Inicializar UI de cola
+        function initQueueUI() {
+            if (queueUI.initialized) return;
+            
+            queueUI.progressBtn = document.getElementById('queueProgressBtn');
+            queueUI.badge = document.getElementById('queueBadge');
+            queueUI.modal = document.getElementById('queueProgressModal');
+            queueUI.jobsList = document.getElementById('queueJobsList');
+            queueUI.errorModal = document.getElementById('errorReportModal');
+            queueUI.initialized = true;
+            
+            // Listener del sistema de cola
+            window.importQueue.addEventListener((event, data, queue) => {
+                updateQueueUI(event, data, queue);
+            });
+            
+            // Actualizar UI inicial
+            updateQueueUI('init', null, window.importQueue);
+        }
+
+        // Actualizar UI según eventos de la cola
+        function updateQueueUI(event, data, queue) {
+            if (!queueUI.initialized) return;
+            
+            const stats = queue.getStats();
+            const hasActive = stats.pending > 0 || stats.processing > 0;
+            
+            // Actualizar botón y badge
+            queueUI.progressBtn.classList.toggle('hidden', stats.total === 0);
+            queueUI.badge.classList.toggle('hidden', !hasActive);
+            queueUI.badge.textContent = hasActive ? (stats.pending + stats.processing) : '0';
+            
+            // Actualizar estadísticas del modal
+            document.getElementById('queueStatsPending').textContent = `${stats.pending + stats.processing} en cola`;
+            document.getElementById('queueStatsCompleted').textContent = `${stats.completed} completados`;
+            document.getElementById('queueStatsErrors').textContent = `${stats.error} errores`;
+            
+            // Actualizar botones de pausa/reanudar
+            const isPaused = queue.isPaused;
+            const isProcessing = queue.isProcessing;
+            document.getElementById('queuePauseBtn').classList.toggle('hidden', !isProcessing || isPaused);
+            document.getElementById('queueResumeBtn').classList.toggle('hidden', !isPaused);
+            
+            // Actualizar lista de trabajos
+            renderQueueJobs(queue);
+            
+            // Actualizar progreso global
+            updateGlobalProgress(queue);
+        }
+
+        // Renderizar lista de trabajos
+        function renderQueueJobs(queue) {
+            const jobs = Array.from(queue.queue.values())
+                .sort((a, b) => a.createdAt - b.createdAt);
+            
+            if (jobs.length === 0) {
+                queueUI.jobsList.innerHTML = `
+                    <div class="text-center text-gray-400 py-8">
+                        <i class="fas fa-inbox text-4xl mb-2"></i>
+                        <p>No hay importaciones en la cola</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            queueUI.jobsList.innerHTML = jobs.map(job => createJobCard(job)).join('');
+            
+            // Añadir event listeners para menús contextuales
+            setupJobContextMenus();
+        }
+
+        // Crear card de trabajo
+        function createJobCard(job) {
+            const progress = job.getProgressPercentage();
+            const statusIcon = window.ImportQueueUI.getStatusIcon(job.status);
+            const statusText = window.ImportQueueUI.getStatusText(job.status);
+            const duration = window.ImportQueueUI.formatTime(job.getDuration());
+            
+            return `
+                <div class="job-card bg-black/20 border border-white/10 rounded-lg p-4" data-job-id="${job.id}" draggable="true">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <i class="${statusIcon}"></i>
+                                <h4 class="text-white font-medium truncate">${job.courseTitle}</h4>
+                                <span class="text-xs text-gray-400">${statusText}</span>
+                            </div>
+                            <div class="text-sm text-gray-300">
+                                ${job.courseMode === 'new' ? 'Curso nuevo' : 'Curso existente'} • 
+                                ${job.sections.size} sección(es) • 
+                                ${job.getTotalFiles()} archivo(s)
+                            </div>
+                            ${job.progress.current ? `<div class="text-xs text-gray-400 mt-1">${job.progress.current}</div>` : ''}
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-gray-400">${duration}</span>
+                            <button onclick="showAdvancedJobMenu('${job.id}', event)" class="text-white/60 hover:text-white">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Barra de progreso -->
+                    <div class="mb-2">
+                        <div class="flex justify-between text-xs text-gray-400 mb-1">
+                            <span>${job.progress.completed}/${job.progress.total} archivos</span>
+                            <span>${progress}%</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div class="bg-${job.status === 'error' ? 'red' : job.status === 'completed' ? 'green' : 'orange'}-500 h-2 rounded-full transition-all duration-300" style="width: ${progress}%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Errores (si los hay) -->
+                    ${job.errors.length > 0 ? `
+                        <div class="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded text-xs">
+                            <i class="fas fa-exclamation-triangle text-red-400 mr-1"></i>
+                            ${job.errors.length} error(es) - <button onclick="showJobErrors('${job.id}')" class="text-red-300 underline">Ver detalles</button>
+                        </div>
+                    ` : ''}
+                    
+                    <!-- Secciones expandibles -->
+                    <div class="mt-3">
+                        <button onclick="toggleJobSections('${job.id}')" class="text-xs text-gray-400 hover:text-gray-200">
+                            <i class="fas fa-chevron-down mr-1"></i>Ver secciones y archivos
+                        </button>
+                        <div id="job-sections-${job.id}" class="hidden mt-2 space-y-2 text-xs">
+                            ${Array.from(job.sections.entries()).map(([sectionName, files]) => {
+                                const sectionCancelled = job.cancelledSections.has(sectionName);
+                                return `
+                                    <div class="bg-black/30 rounded p-2 border border-white/5 ${sectionCancelled ? 'opacity-50' : ''}">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <span class="text-gray-200 font-medium">${sectionName}</span>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-gray-400">${files.length} archivo(s)</span>
+                                                ${sectionCancelled ? 
+                                                    '<span class="text-red-400 text-xs"><i class="fas fa-ban mr-1"></i>Cancelada</span>' :
+                                                    `<button onclick="cancelJobSection('${job.id}', '${sectionName}')" class="text-red-400 hover:text-red-300" title="Cancelar sección">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>`
+                                                }
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Lista de archivos -->
+                                        <div class="space-y-1 ml-2">
+                                            ${files.map(file => {
+                                                const fileKey = sectionName + ':' + file.name;
+                                                const fileCancelled = job.cancelledFiles.has(fileKey);
+                                                return `
+                                                    <div class="flex items-center justify-between py-1 px-2 bg-black/20 rounded ${fileCancelled ? 'opacity-50' : ''}">
+                                                        <div class="flex items-center gap-2">
+                                                            <i class="fas fa-video text-blue-400"></i>
+                                                            <span class="text-gray-300 truncate max-w-[200px]">${file.name}</span>
+                                                            <span class="text-gray-500 text-xs">${window.ImportQueueUI.formatFileSize(file.size)}</span>
+                                                        </div>
+                                                        <div class="flex items-center gap-1">
+                                                            ${fileCancelled ? 
+                                                                '<span class="text-red-400 text-xs"><i class="fas fa-ban"></i></span>' :
+                                                                sectionCancelled ? '' :
+                                                                `<button onclick="cancelJobFile('${job.id}', '${sectionName}', '${file.name}')" class="text-red-400 hover:text-red-300 text-xs" title="Cancelar archivo">
+                                                                    <i class="fas fa-times"></i>
+                                                                </button>`
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                `;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Funciones de control de cola
+        function openQueueProgressModal() {
+            if (!queueUI.initialized) initQueueUI();
+            queueUI.modal.classList.remove('hidden');
+        }
+
+        function closeQueueProgressModal() {
+            queueUI.modal.classList.add('hidden');
+        }
+
+        function toggleQueuePause() {
+            if (window.importQueue.isPaused) {
+                window.importQueue.resumeQueue();
+            } else {
+                window.importQueue.pauseQueue();
+            }
+        }
+
+        function cancelAllJobs() {
+            if (confirm('¿Cancelar todas las importaciones en cola? Los archivos ya subidos se mantendrán.')) {
+                window.importQueue.cancelAll();
+            }
+        }
+
+        function clearCompletedJobs() {
+            const stats = window.importQueue.getStats();
+            const toClean = stats.completed + stats.cancelled + stats.error;
+            
+            if (toClean === 0) {
+                alert('No hay trabajos completados para limpiar.');
+                return;
+            }
+            
+            if (confirm(`¿Limpiar ${toClean} trabajo(s) completado(s)/cancelado(s) de la lista?`)) {
+                window.importQueue.clearCompleted();
+                showNotification(`${toClean} trabajo(s) limpiado(s) de la cola`, 'info');
+            }
+        }
+
+        // Funciones adicionales de utilidad
+        function pauseJob(jobId) {
+            // Para futuras mejoras: pausar trabajos individuales
+            const job = window.importQueue.queue.get(jobId);
+            if (job && job.status === 'processing') {
+                job.setStatus('paused', 'Pausado por el usuario');
+                window.importQueue.saveToStorage();
+                showNotification(`Trabajo "${job.courseTitle}" pausado`, 'info');
+            }
+        }
+
+        function resumeJob(jobId) {
+            // Para futuras mejoras: reanudar trabajos individuales
+            const job = window.importQueue.queue.get(jobId);
+            if (job && job.status === 'paused') {
+                job.setStatus('pending', 'Reanudado');
+                window.importQueue.saveToStorage();
+                showNotification(`Trabajo "${job.courseTitle}" reanudado`, 'info');
+                
+                // Reiniciar procesamiento si no está activo
+                if (!window.importQueue.isProcessing) {
+                    window.importQueue.processQueue();
+                }
+            }
+        }
+
+        // Mejorar menú contextual con más opciones
+        function showAdvancedJobMenu(jobId, event) {
+            event.stopPropagation();
+            const job = window.importQueue.queue.get(jobId);
+            if (!job) return;
+            
+            const isActive = job.status === 'pending' || job.status === 'processing';
+            const hasErrors = job.errors.length > 0;
+            
+            const menu = document.createElement('div');
+            menu.className = 'fixed bg-gray-800 border border-gray-600 rounded-lg shadow-lg p-2 z-50 text-sm';
+            menu.style.left = event.clientX + 'px';
+            menu.style.top = event.clientY + 'px';
+            
+            menu.innerHTML = `
+                <div class="space-y-1">
+                    ${isActive ? `
+                        <button onclick="cancelJobAndCloseMenu('${jobId}')" class="w-full text-left px-3 py-2 hover:bg-gray-700 text-red-300 rounded">
+                            <i class="fas fa-times mr-2"></i>Cancelar trabajo
+                        </button>
+                    ` : ''}
+                    
+                    <button onclick="toggleJobSections('${jobId}'); closeContextMenu()" class="w-full text-left px-3 py-2 hover:bg-gray-700 text-blue-300 rounded">
+                        <i class="fas fa-list mr-2"></i>Ver detalles
+                    </button>
+                    
+                    ${hasErrors ? `
+                        <button onclick="showJobErrors('${jobId}'); closeContextMenu()" class="w-full text-left px-3 py-2 hover:bg-gray-700 text-red-300 rounded">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>Ver errores
+                        </button>
+                    ` : ''}
+                    
+                    <hr class="border-gray-600 my-1">
+                    
+                    <button onclick="copyJobInfo('${jobId}'); closeContextMenu()" class="w-full text-left px-3 py-2 hover:bg-gray-700 text-gray-300 rounded">
+                        <i class="fas fa-copy mr-2"></i>Copiar info
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(menu);
+            
+            // Cerrar menú al hacer clic fuera
+            const closeMenu = (e) => {
+                if (!menu.contains(e.target)) {
+                    menu.remove();
+                    document.removeEventListener('click', closeMenu);
+                }
+            };
+            setTimeout(() => document.addEventListener('click', closeMenu), 10);
+        }
+
+        function cancelJobAndCloseMenu(jobId) {
+            const job = window.importQueue.queue.get(jobId);
+            if (job && confirm(`¿Cancelar importación de "${job.courseTitle}"?`)) {
+                window.importQueue.cancelJob(jobId);
+                showNotification(`Trabajo cancelado: ${job.courseTitle}`, 'warning');
+            }
+            closeContextMenu();
+        }
+
+        function closeContextMenu() {
+            const menu = document.querySelector('.fixed.bg-gray-800');
+            if (menu) menu.remove();
+        }
+
+        function copyJobInfo(jobId) {
+            const job = window.importQueue.queue.get(jobId);
+            if (!job) return;
+            
+            const info = `Trabajo de Importación:
+Título: ${job.courseTitle}
+Estado: ${window.ImportQueueUI.getStatusText(job.status)}
+Progreso: ${job.getProgressPercentage()}% (${job.progress.completed}/${job.progress.total} archivos)
+Secciones: ${job.sections.size}
+Errores: ${job.errors.length}
+Creado: ${new Date(job.createdAt).toLocaleString()}
+${job.startedAt ? 'Iniciado: ' + new Date(job.startedAt).toLocaleString() : ''}
+${job.completedAt ? 'Completado: ' + new Date(job.completedAt).toLocaleString() : ''}`;
+            
+            navigator.clipboard.writeText(info).then(() => {
+                showNotification('Información copiada al portapapeles', 'info');
+            }).catch(() => {
+                alert('Información del trabajo:\n\n' + info);
+            });
+        }
+
+        function updateGlobalProgress(queue) {
+            const allJobs = Array.from(queue.queue.values());
+            const activeJobs = allJobs.filter(job => job.status === 'processing' || job.status === 'pending');
+            
+            if (activeJobs.length === 0) {
+                document.getElementById('queueGlobalProgress').textContent = 'Cola vacía';
+                document.getElementById('queueGlobalProgressBar').style.width = '0%';
+                return;
+            }
+            
+            const totalFiles = activeJobs.reduce((sum, job) => sum + job.getTotalFiles(), 0);
+            const completedFiles = activeJobs.reduce((sum, job) => sum + job.progress.completed, 0);
+            const percentage = totalFiles > 0 ? Math.round((completedFiles / totalFiles) * 100) : 0;
+            
+            document.getElementById('queueGlobalProgress').textContent = 
+                `${completedFiles}/${totalFiles} archivos (${activeJobs.length} curso(s))`;
+            document.getElementById('queueGlobalProgressBar').style.width = percentage + '%';
+        }
+
+        // Funciones de menú contextual
+        function showJobContextMenu(jobId, event) {
+            event.stopPropagation();
+            // Implementar menú contextual con opciones de cancelar, pausar, ver detalles, etc.
+            // Por ahora, mostrar un alert con opciones básicas
+            const job = window.importQueue.queue.get(jobId);
+            if (!job) return;
+            
+            const options = [
+                'Cancelar trabajo',
+                'Ver errores',
+                'Ver secciones'
+            ];
+            
+            const choice = prompt('Opciones del trabajo:\\n' + options.map((opt, i) => `${i+1}. ${opt}`).join('\\n') + '\\n\\nElige una opción (1-3):');
+            
+            switch (choice) {
+                case '1':
+                    if (confirm(`¿Cancelar importación de "${job.courseTitle}"?`)) {
+                        window.importQueue.cancelJob(jobId);
+                    }
+                    break;
+                case '2':
+                    showJobErrors(jobId);
+                    break;
+                case '3':
+                    toggleJobSections(jobId);
+                    break;
+            }
+        }
+
+        function toggleJobSections(jobId) {
+            const sectionsDiv = document.getElementById(`job-sections-${jobId}`);
+            if (sectionsDiv) {
+                sectionsDiv.classList.toggle('hidden');
+                const btn = sectionsDiv.previousElementSibling;
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = sectionsDiv.classList.contains('hidden') ? 
+                        'fas fa-chevron-down mr-1' : 'fas fa-chevron-up mr-1';
+                }
+            }
+        }
+
+        function cancelJobSection(jobId, sectionName) {
+            const job = window.importQueue.queue.get(jobId);
+            if (!job) return;
+            
+            const files = job.sections.get(sectionName);
+            const fileCount = files ? files.length : 0;
+            
+            if (confirm(`¿Cancelar sección "${sectionName}" con ${fileCount} archivo(s)?`)) {
+                window.importQueue.cancelSection(jobId, sectionName);
+                showNotification(`Sección "${sectionName}" cancelada`, 'warning');
+            }
+        }
+
+        function cancelJobFile(jobId, sectionName, fileName) {
+            if (confirm(`¿Cancelar archivo "${fileName}"?`)) {
+                window.importQueue.cancelFile(jobId, sectionName, fileName);
+                showNotification(`Archivo "${fileName}" cancelado`, 'warning');
+            }
+        }
+
+        function showJobErrors(jobId) {
+            const job = window.importQueue.queue.get(jobId);
+            if (!job || job.errors.length === 0) {
+                alert('No hay errores para este trabajo.');
+                return;
+            }
+            
+            showErrorReport(job);
+        }
+
+        // Funciones de notificaciones e informes
+        function showErrorReport(specificJob = null) {
+            const errorReport = specificJob ? 
+                { totalJobs: 1, totalErrors: specificJob.errors.length, jobs: [specificJob] } :
+                window.importQueue.getErrorReport();
+            
+            const modal = document.getElementById('errorReportModal');
+            const content = document.getElementById('errorReportContent');
+            
+            if (errorReport.totalErrors === 0) {
+                content.innerHTML = `
+                    <div class="text-center text-gray-400 py-8">
+                        <i class="fas fa-check-circle text-green-400 text-4xl mb-2"></i>
+                        <p>¡No hay errores! Todas las importaciones se completaron exitosamente.</p>
+                    </div>
+                `;
+            } else {
+                content.innerHTML = `
+                    <div class="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded">
+                        <h4 class="text-red-200 font-medium mb-2">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>Resumen de Errores
+                        </h4>
+                        <div class="text-sm text-gray-300">
+                            <p>📊 Total de trabajos con errores: <span class="text-red-300 font-medium">${errorReport.totalJobs}</span></p>
+                            <p>🚨 Total de errores: <span class="text-red-300 font-medium">${errorReport.totalErrors}</span></p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        ${errorReport.jobs.map(job => `
+                            <div class="bg-black/20 border border-red-500/20 rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h5 class="text-white font-medium">${job.courseTitle}</h5>
+                                    <span class="text-xs text-gray-400">
+                                        ${new Date(job.createdAt).toLocaleString()}
+                                    </span>
+                                </div>
+                                
+                                <div class="space-y-2 max-h-40 overflow-y-auto">
+                                    ${job.errors.map(error => `
+                                        <div class="bg-red-500/10 border border-red-500/20 rounded p-2 text-sm">
+                                            <div class="flex items-start gap-2">
+                                                <i class="fas fa-exclamation-circle text-red-400 mt-0.5"></i>
+                                                <div class="flex-1">
+                                                    <div class="text-red-200 font-medium">${error.section} / ${error.file}</div>
+                                                    <div class="text-gray-300 text-xs mt-1">${error.error}</div>
+                                                    <div class="text-gray-400 text-xs mt-1">
+                                                        ${new Date(error.timestamp).toLocaleTimeString()}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            modal.classList.remove('hidden');
+        }
+
+        function closeErrorReportModal() {
+            document.getElementById('errorReportModal').classList.add('hidden');
+        }
+
+        function exportErrorReport() {
+            const report = window.importQueue.getErrorReport();
+            const content = {
+                timestamp: new Date().toISOString(),
+                summary: {
+                    totalJobsWithErrors: report.totalJobs,
+                    totalErrors: report.totalErrors
+                },
+                jobs: report.jobs.map(job => ({
+                    courseTitle: job.courseTitle,
+                    status: job.status,
+                    createdAt: new Date(job.createdAt).toISOString(),
+                    completedAt: job.completedAt ? new Date(job.completedAt).toISOString() : null,
+                    errors: job.errors.map(error => ({
+                        section: error.section,
+                        file: error.file,
+                        error: error.error,
+                        timestamp: new Date(error.timestamp).toISOString()
+                    }))
+                }))
+            };
+            
+            const blob = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `informe-errores-${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function setupJobContextMenus() {
+            // Drag and drop para reordenar trabajos
+            let draggedJob = null;
+            
+            queueUI.jobsList.querySelectorAll('.job-card').forEach(card => {
+                card.addEventListener('dragstart', (e) => {
+                    draggedJob = card;
+                    card.classList.add('opacity-50');
+                });
+                
+                card.addEventListener('dragend', (e) => {
+                    card.classList.remove('opacity-50');
+                    draggedJob = null;
+                });
+                
+                card.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                });
+                
+                card.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    if (draggedJob && draggedJob !== card) {
+                        const container = card.parentNode;
+                        const afterElement = e.clientY < card.getBoundingClientRect().top + card.offsetHeight / 2;
+                        if (afterElement) {
+                            container.insertBefore(draggedJob, card);
+                        } else {
+                            container.insertBefore(draggedJob, card.nextSibling);
+                        }
+                        // Aquí podrías reordenar la cola real si es necesario
+                    }
+                });
+            });
+        }
+
+        // Inicializar UI de cola cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(initQueueUI, 100); // Delay para asegurar que importQueue esté disponible
+        });
 
         // Botón limpieza
         const cleanupBtn = document.getElementById('cleanupBtn');
