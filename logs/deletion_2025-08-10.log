@@ -1,0 +1,32 @@
+2025-08-10 01:39:15 [DELETION] 🔍 INICIO ELIMINACIÓN PRUEBA - Sesión: test_6897dc2335fb34.00585519 | Context: {"curso_id":6,"delete_videos":true,"debug_enabled":true,"test_mode":true} | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] ✅ Curso encontrado - Sesión: test_6897dc2335fb34.00585519 | Context: {"curso_id":6,"titulo":"Curso Escenario Usuario"} | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] 🔄 Transacción iniciada - Sesión: test_6897dc2335fb34.00585519 | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] 📹 Buscando videos para eliminar - Sesión: test_6897dc2335fb34.00585519 | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] 📹 Videos encontrados - Sesión: test_6897dc2335fb34.00585519 | Context: {"count":3,"videos":["video1.mp4","video2.mp4","video3.mp4"]} | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] 📊 Verificando progreso existente - Sesión: test_6897dc2335fb34.00585519 | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] 📊 Progreso encontrado - Sesión: test_6897dc2335fb34.00585519 | Context: {"count":2,"detalles":[{"clase_id":768,"tiempo_visto":250,"ultima_visualizacion":"2025-08-09 23:39:15","archivo_video":"video2.mp4","titulo":"Clase 2"},{"clase_id":767,"tiempo_visto":180,"ultima_visualizacion":"2025-08-09 23:39:12","archivo_video":"video1.mp4","titulo":"Clase 1"}]} | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] 🗑️ Eliminando curso de la base de datos - Sesión: test_6897dc2335fb34.00585519 | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] ✅ Curso eliminado de BD (CASCADE activo) - Sesión: test_6897dc2335fb34.00585519 | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] 🎬 INICIANDO ELIMINACIÓN DE VIDEOS - Sesión: test_6897dc2335fb34.00585519 | Context: {"total_videos":3} | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] 📹 Procesando video 1/3 - Sesión: test_6897dc2335fb34.00585519 | Context: {"archivo":"video1.mp4","ruta_completa":"C:\\xampp\\htdocs\\cloneUdemyV1B\\config\/..\/uploads\/videos\/6\/video1.mp4","existe":true} | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] 📏 Archivo encontrado - Sesión: test_6897dc2335fb34.00585519 | Context: {"archivo":"video1.mp4","tamaño_mb":0} | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] 🔄 Intento 1 de eliminación - Sesión: test_6897dc2335fb34.00585519 | Context: {"archivo":"video1.mp4","intento":1} | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] ✅ ARCHIVO ELIMINADO EXITOSAMENTE - Sesión: test_6897dc2335fb34.00585519 | Context: {"archivo":"video1.mp4","intento_exitoso":1,"ruta":"C:\\xampp\\htdocs\\cloneUdemyV1B\\config\/..\/uploads\/videos\/6\/video1.mp4"} | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] 📹 Procesando video 2/3 - Sesión: test_6897dc2335fb34.00585519 | Context: {"archivo":"video2.mp4","ruta_completa":"C:\\xampp\\htdocs\\cloneUdemyV1B\\config\/..\/uploads\/videos\/6\/video2.mp4","existe":true} | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] 📏 Archivo encontrado - Sesión: test_6897dc2335fb34.00585519 | Context: {"archivo":"video2.mp4","tamaño_mb":0} | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] 🔄 Intento 1 de eliminación - Sesión: test_6897dc2335fb34.00585519 | Context: {"archivo":"video2.mp4","intento":1} | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] ✅ ARCHIVO ELIMINADO EXITOSAMENTE - Sesión: test_6897dc2335fb34.00585519 | Context: {"archivo":"video2.mp4","intento_exitoso":1,"ruta":"C:\\xampp\\htdocs\\cloneUdemyV1B\\config\/..\/uploads\/videos\/6\/video2.mp4"} | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] 📹 Procesando video 3/3 - Sesión: test_6897dc2335fb34.00585519 | Context: {"archivo":"video3.mp4","ruta_completa":"C:\\xampp\\htdocs\\cloneUdemyV1B\\config\/..\/uploads\/videos\/6\/video3.mp4","existe":true} | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] 📏 Archivo encontrado - Sesión: test_6897dc2335fb34.00585519 | Context: {"archivo":"video3.mp4","tamaño_mb":0} | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] 🔄 Intento 1 de eliminación - Sesión: test_6897dc2335fb34.00585519 | Context: {"archivo":"video3.mp4","intento":1} | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] ✅ ARCHIVO ELIMINADO EXITOSAMENTE - Sesión: test_6897dc2335fb34.00585519 | Context: {"archivo":"video3.mp4","intento_exitoso":1,"ruta":"C:\\xampp\\htdocs\\cloneUdemyV1B\\config\/..\/uploads\/videos\/6\/video3.mp4"} | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] 📁 Estado final del directorio - Sesión: test_6897dc2335fb34.00585519 | Context: {"directorio":"C:\\xampp\\htdocs\\cloneUdemyV1B\\config\/..\/uploads\/videos\/6\/","archivos_restantes":0,"archivos":[]} | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] ✅ Directorio eliminado - Sesión: test_6897dc2335fb34.00585519 | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] ✅ TRANSACCIÓN COMPLETADA EXITOSAMENTE - Sesión: test_6897dc2335fb34.00585519 | Memory: 2 MB
+2025-08-10 01:39:15 [DELETION] 🎯 FIN ELIMINACIÓN PRUEBA - Sesión: test_6897dc2335fb34.00585519 | Context: {"curso_id":6,"resultado":"exitoso","videos_eliminados":3,"session_id":"test_6897dc2335fb34.00585519"} | Memory: 2 MB
+2025-08-10 01:53:46 [DELETION] 🗑️ LIMPIANDO CARPETA HUÉRFANA: 4 | Context: {"folder_path":"uploads\/videos\/4","files_count":2} | Memory: 2 MB
+2025-08-10 01:53:46 [DELETION] 📹 Eliminando archivo huérfano | Context: {"archivo":"S3_L18_Mapa_de_aspereza__Roughness_.mp4","ruta":"uploads\/videos\/4\/S3_L18_Mapa_de_aspereza__Roughness_.mp4","tamaño_mb":50.02,"carpeta_huerfana":"4"} | Memory: 2 MB
+2025-08-10 01:53:46 [DELETION] ✅ ARCHIVO HUÉRFANO ELIMINADO | Context: {"archivo":"S3_L18_Mapa_de_aspereza__Roughness_.mp4","intento_exitoso":1,"carpeta":"4"} | Memory: 2 MB
+2025-08-10 01:53:46 [DELETION] 📹 Eliminando archivo huérfano | Context: {"archivo":"S3_L1_Introduccion.mp4","ruta":"uploads\/videos\/4\/S3_L1_Introduccion.mp4","tamaño_mb":31.85,"carpeta_huerfana":"4"} | Memory: 2 MB
+2025-08-10 01:53:46 [DELETION] ✅ ARCHIVO HUÉRFANO ELIMINADO | Context: {"archivo":"S3_L1_Introduccion.mp4","intento_exitoso":1,"carpeta":"4"} | Memory: 2 MB
+2025-08-10 01:53:46 [DELETION] ✅ DIRECTORIO HUÉRFANO ELIMINADO | Context: {"folder_id":"4","path":"uploads\/videos\/4"} | Memory: 2 MB

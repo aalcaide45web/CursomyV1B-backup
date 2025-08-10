@@ -1,0 +1,8 @@
+2025-08-10 01:39:11 [INFO] INICIO DE PRUEBA - Reproducción del escenario del usuario | Memory: 2 MB
+2025-08-10 01:39:15 [INFO] SIMULANDO ELIMINACIÓN VÍA API | Context: {"id":"6","deleteVideos":true,"debug":true} | Memory: 2 MB
+2025-08-10 01:39:15 [INFO] FIN DE PRUEBA - Reproducción completada | Context: {"session_id":"test_6897dc2335fb34.00585519"} | Memory: 2 MB
+2025-08-10 01:52:37 [INFO] VERIFICACIÓN MANUAL DE CARPETAS - Usuario reporta archivos restantes | Memory: 2 MB
+2025-08-10 01:53:46 [INFO] INICIO LIMPIEZA MANUAL DE HUÉRFANOS | Memory: 2 MB
+2025-08-10 01:53:46 [INFO] LIMPIEZA MANUAL COMPLETADA | Context: {"carpetas_huerfanas":1,"archivos_eliminados":2,"directorios_eliminados":1,"carpetas_afectadas":["4"]} | Memory: 2 MB
+2025-08-10 01:53:56 [INFO] VERIFICACIÓN MANUAL DE CARPETAS - Usuario reporta archivos restantes | Memory: 2 MB
+2025-08-10 01:53:56 [INFO] VERIFICACIÓN OK - No hay archivos huérfanos | Memory: 2 MB
