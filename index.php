@@ -1006,6 +1006,15 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
         function updateQueueUI(event, data, queue) {
             if (!queueUI.initialized) return;
             
+            // Debug para entender los eventos
+            if (event === 'progress_updated') {
+                console.log('[UI] Progreso actualizado:', {
+                    jobId: data.id,
+                    progress: data.progress,
+                    percentage: data.getProgressPercentage()
+                });
+            }
+            
             const stats = queue.getStats();
             const hasActive = stats.pending > 0 || stats.processing > 0;
             
@@ -1025,8 +1034,11 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
             document.getElementById('queuePauseBtn').classList.toggle('hidden', !isProcessing || isPaused);
             document.getElementById('queueResumeBtn').classList.toggle('hidden', !isPaused);
             
-            // Actualizar lista de trabajos
-            renderQueueJobs(queue);
+            // Actualizar lista de trabajos según el evento
+            const eventsToRender = ['progress_updated', 'job_started', 'job_completed', 'job_error', 'init', 'job_added', 'job_cancelled', 'section_cancelled', 'file_cancelled'];
+            if (eventsToRender.includes(event)) {
+                renderQueueJobs(queue);
+            }
             
             // Actualizar progreso global
             updateGlobalProgress(queue);

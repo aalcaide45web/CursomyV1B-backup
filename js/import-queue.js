@@ -20,8 +20,17 @@ class ImportQueue {
         
         // Auto-iniciar procesamiento si hay trabajos pendientes
         if (this.hasActiveTasks()) {
+            console.log('[QUEUE] Iniciando procesamiento automático al cargar');
             setTimeout(() => this.processQueue(), 1000);
         }
+
+        // Mecanismo de recuperación automática cada 30 segundos
+        setInterval(() => {
+            if (this.hasActiveTasks() && !this.isProcessing && !this.isPaused) {
+                console.log('[QUEUE] Mecanismo de recuperación: reiniciando cola atascada');
+                this.processQueue();
+            }
+        }, 30000);
     }
 
     /**
@@ -43,7 +52,7 @@ class ImportQueue {
         
         // Auto-iniciar procesamiento
         if (!this.isProcessing) {
-            this.processQueue();
+            setTimeout(() => this.processQueue(), 100);
         }
         
         return job;
@@ -53,21 +62,28 @@ class ImportQueue {
      * Procesar cola de trabajos
      */
     async processQueue() {
-        if (this.isProcessing || this.isPaused) return;
+        if (this.isProcessing || this.isPaused) {
+            console.log('[QUEUE] ProcessQueue bloqueado:', { isProcessing: this.isProcessing, isPaused: this.isPaused });
+            return;
+        }
         
         const pendingJobs = Array.from(this.queue.values())
             .filter(job => job.status === 'pending')
             .sort((a, b) => a.createdAt - b.createdAt);
         
+        console.log('[QUEUE] Trabajos pendientes encontrados:', pendingJobs.length);
+        
         if (pendingJobs.length === 0) {
             this.isProcessing = false;
             this.currentJob = null;
             this.notifyListeners('queue_completed');
+            console.log('[QUEUE] Cola completada - no hay trabajos pendientes');
             return;
         }
         
         this.isProcessing = true;
         this.currentJob = pendingJobs[0];
+        console.log('[QUEUE] Iniciando procesamiento del trabajo:', this.currentJob.courseTitle);
         
         try {
             await this.processJob(this.currentJob);
@@ -76,15 +92,17 @@ class ImportQueue {
             this.currentJob.setStatus('error', 'Error inesperado: ' + error.message);
         }
         
-        this.currentJob = null;
         this.saveToStorage();
         
-        // Continuar con el siguiente trabajo si no está pausado
-        if (!this.isPaused) {
-            setTimeout(() => this.processQueue(), 500);
-        } else {
+        // IMPORTANTE: Continuar procesamiento independientemente del estado de pausa
+        // La pausa solo afecta al inicio de nuevos trabajos, no a la continuidad de la cola
+        setTimeout(() => {
             this.isProcessing = false;
-        }
+            this.currentJob = null;
+            if (!this.isPaused) {
+                this.processQueue();
+            }
+        }, 500);
     }
 
     /**
@@ -185,7 +203,10 @@ class ImportQueue {
                     await this.uploadFile(job, file, sectionName, sectionIndex + 1, fileIndex + 1);
                     job.completedFiles++;
                     globalFileIndex++;
-                    job.updateProgress(`${sectionName} / ${file.name}`, globalFileIndex, totalFiles);
+                    job.updateProgress(`✅ ${sectionName} / ${file.name}`, globalFileIndex, totalFiles);
+                    
+                    // Guardar progreso periódicamente
+                    this.saveToStorage();
                     
                 } catch (error) {
                     job.errors.push({
@@ -244,8 +265,11 @@ class ImportQueue {
     resumeQueue() {
         this.isPaused = false;
         this.notifyListeners('queue_resumed');
+        
+        // Forzar reinicio de procesamiento
+        console.log('[QUEUE] Reanudando cola, estado:', { isProcessing: this.isProcessing, pendingJobs: this.getStats().pending });
         if (!this.isProcessing) {
-            this.processQueue();
+            setTimeout(() => this.processQueue(), 100);
         }
     }
 
@@ -663,6 +687,11 @@ class ImportJob {
 
     updateProgress(current, completed, total) {
         this.progress = { current, completed, total };
+        
+        // Notificar cambio de progreso para actualizar UI en tiempo real
+        if (window.importQueue) {
+            window.importQueue.notifyListeners('progress_updated', this);
+        }
     }
 
     getProgressPercentage() {

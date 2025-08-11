@@ -208,7 +208,7 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
                 
                 <div class="bg-black/20 rounded-lg p-4 border border-white/10">
                     <h4 class="text-white font-semibold mb-2">Progreso</h4>
-                    <div id="courseProgress" class="text-gray-300 text-sm">Cargando...</div>
+                    <div id="courseProgress" class="text-gray-300 text-sm max-h-32 overflow-y-auto pr-2" style="scrollbar-width: thin;">Cargando...</div>
                     <div class="flex flex-wrap items-center gap-2 mt-3">
                         <button id="resumeLastBtn" class="bg-green-600 hover:bg-green-700 text-white px-2 sm:px-3 py-2 rounded text-xs sm:text-sm disabled:opacity-50" title="Reanudar" disabled>
                             <i class="fas fa-play"></i>
@@ -256,6 +256,7 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
                 </button>
             </div>
         <?php else: ?>
+            <!-- Controles superiores (siempre visibles) -->
             <div class="flex justify-end mb-3 gap-2">
                 <button id="expandAllBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">Expandir todas</button>
                 <button id="collapseAllBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm">Contraer todas</button>
@@ -265,6 +266,9 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
                 </button>
                 <!-- Botón de búsqueda duplicado ocultado por petición -->
             </div>
+            
+            <!-- Lista de secciones con scroll -->
+            <div class="sections-container max-h-[70vh] overflow-y-auto pr-2" style="scrollbar-width: thin;">
             <?php foreach ($secciones as $seccion): ?>
                 <div class="glass-dark rounded-lg mb-6 overflow-hidden" data-section-id="<?php echo $seccion['id']; ?>">
                     <!-- Header de la sección -->
@@ -374,6 +378,7 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
                     </div>
                 </div>
             <?php endforeach; ?>
+            </div> <!-- Fin del div sections-container con scroll -->
         <?php endif; ?>
     </div>
 
