@@ -839,9 +839,23 @@ function openSectionModal(sectionData = null) {
         title.innerHTML = '<i class="fas fa-plus mr-2"></i>Nueva Sección';
         form.reset();
         document.getElementById('sectionId').value = '';
-        // Establecer orden siguiente
-        const nextOrder = document.querySelectorAll('.glass-dark').length;
-        document.getElementById('sectionOrden').value = nextOrder;
+        // Establecer orden siguiente basado en el número REAL de secciones
+        // Preferir el valor del servidor (SECCIONES), y si no existe, contar solo las secciones de primer nivel
+        let sectionsCount = 0;
+        try {
+            if (typeof SECCIONES !== 'undefined' && Array.isArray(SECCIONES)) {
+                sectionsCount = SECCIONES.length;
+            } else {
+                const container = document.querySelector('.sections-container');
+                if (container) {
+                    sectionsCount = container.querySelectorAll(':scope > div[data-section-id]').length;
+                } else {
+                    sectionsCount = document.querySelectorAll(':scope > .sections-container > div[data-section-id]').length;
+                }
+            }
+        } catch (_) { sectionsCount = 0; }
+        const nextOrder = Math.max(1, Number(sectionsCount) + 1);
+        document.getElementById('sectionOrden').value = String(nextOrder);
     }
     
     modal.classList.remove('hidden');
