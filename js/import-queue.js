@@ -158,6 +158,8 @@ class ImportQueue {
         
         job.courseId = result.data.id;
         job.updateProgress('Curso creado exitosamente', 0, job.getTotalFiles());
+        // Notificar a la UI para insertar placeholder en index
+        this.notifyListeners('job_course_created', job);
     }
 
     /**
@@ -543,7 +545,7 @@ class ImportQueue {
      */
     clearCompleted() {
         const completedJobs = Array.from(this.queue.values())
-            .filter(job => job.status === 'completed' || job.status === 'cancelled');
+            .filter(job => job.status === 'completed' || job.status === 'cancelled' || job.status === 'error');
         
         // Limpiar archivos temporales de trabajos cancelados
         completedJobs

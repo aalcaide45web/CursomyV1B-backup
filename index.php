@@ -1035,13 +1035,16 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
             document.getElementById('queueResumeBtn').classList.toggle('hidden', !isPaused);
             
             // Actualizar lista de trabajos según el evento
-            const eventsToRender = ['progress_updated', 'job_started', 'job_completed', 'job_error', 'init', 'job_added', 'job_cancelled', 'section_cancelled', 'file_cancelled'];
+            const eventsToRender = ['progress_updated', 'job_started', 'job_completed', 'job_error', 'init', 'job_added', 'job_cancelled', 'section_cancelled', 'file_cancelled', 'queue_cleaned'];
             if (eventsToRender.includes(event)) {
                 renderQueueJobs(queue);
             }
             
             // Actualizar progreso global
             updateGlobalProgress(queue);
+
+            // Actualizaciones del grid de cursos (index) para cursos nuevos sin recargar
+            handleIndexCoursesUpdates(event, data, queue);
         }
 
         // Renderizar lista de trabajos
@@ -1063,6 +1066,90 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
             
             // Añadir event listeners para menús contextuales
             setupJobContextMenus();
+        }
+
+        // ======= Gestión de tarjetas en el grid (index) para cursos NUEVOS =======
+        function handleIndexCoursesUpdates(event, data, queue) {
+            try {
+                if (!document.getElementById('coursesGrid')) return; // Solo en index
+                if (!data) return;
+                const job = data; // para eventos que pasan job directamente
+                
+                if (event === 'job_course_created' && job.courseMode === 'new') {
+                    // Insertar placeholder si no existe
+                    const id = `placeholder-job-${job.id}`;
+                    if (!document.getElementById(id)) {
+                        insertCoursePlaceholderCard(job);
+                    }
+                }
+                
+                if (event === 'job_completed' && job.courseMode === 'new') {
+                    // Marcar placeholder como completado y enlazar a curso.php
+                    completeCoursePlaceholderCard(job);
+                }
+                
+                if (event === 'job_cancelled' && job.courseMode === 'new') {
+                    // Quitar placeholder si existiera
+                    const el = document.getElementById(`placeholder-job-${job.id}`);
+                    if (el) el.remove();
+                }
+            } catch (e) { console.warn('[INDEX_PLACEHOLDER] error', e); }
+        }
+
+        function insertCoursePlaceholderCard(job) {
+            const grid = document.getElementById('coursesGrid');
+            if (!grid) return;
+            const card = document.createElement('div');
+            card.id = `placeholder-job-${job.id}`;
+            card.className = 'course-card glass-dark rounded-lg overflow-hidden ring-1 ring-yellow-500/40';
+            card.innerHTML = `
+                <div class="h-48 bg-gradient-to-br from-yellow-600 to-orange-600 flex items-center justify-center">
+                    <i class="fas fa-spinner fa-spin text-4xl text-white opacity-80"></i>
+                </div>
+                <div class="p-4">
+                    <h3 class="text-lg font-semibold text-white mb-1">${job.courseTitle}</h3>
+                    <p class="text-xs text-yellow-300 mb-3"><i class="fas fa-clock mr-1"></i>Procesando importación…</p>
+                    <div class="flex space-x-2 opacity-60 pointer-events-none">
+                        <a class="flex-1 bg-gray-700 text-white text-center py-2 px-3 rounded text-sm"><i class="fas fa-eye mr-1"></i>Ver</a>
+                        <button class="bg-gray-700 text-white py-2 px-3 rounded text-sm"><i class="fas fa-edit"></i></button>
+                        <button class="bg-gray-700 text-white py-2 px-3 rounded text-sm"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            `;
+            grid.prepend(card);
+        }
+
+        function completeCoursePlaceholderCard(job) {
+            const card = document.getElementById(`placeholder-job-${job.id}`);
+            if (!card) return;
+            // Actualizar visual
+            const header = card.querySelector('.h-48');
+            if (header) header.className = 'h-48 bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center';
+            const icon = card.querySelector('.h-48 i');
+            if (icon) icon.className = 'fas fa-check-circle text-4xl text-white opacity-90';
+            const info = card.querySelector('p');
+            if (info) info.className = 'text-xs text-green-300 mb-3';
+            if (info) info.innerHTML = '<i class="fas fa-check mr-1"></i>Importación completada';
+            
+            // Activar acciones básicas si tenemos courseId
+            if (job.courseId) {
+                const actions = document.createElement('div');
+                actions.className = 'flex space-x-2';
+                actions.innerHTML = `
+                    <a href="curso.php?id=${job.courseId}"
+                       class="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-center py-2 px-3 rounded text-sm transition-colors">
+                        <i class="fas fa-eye mr-1"></i>Ver
+                    </a>
+                    <button onclick="editCourse(${job.courseId})" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded text-sm transition-colors">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteCourse(${job.courseId})" class="bg-red-600 hover:bg-red-700 text-white py-2 px-3 rounded text-sm transition-colors">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                const old = card.querySelector('.opacity-60');
+                if (old) old.replaceWith(actions);
+            }
         }
 
         // Crear card de trabajo
