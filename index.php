@@ -1377,6 +1377,12 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
         // Funciones de control de cola
         function openQueueProgressModal() {
             if (!queueUI.initialized) initQueueUI();
+            // Bloquear apertura si no es pestaña dueña
+            try {
+                if (window.importQueue && window.importQueue.isOwner && !window.importQueue.isOwner()) {
+                    return; // ignorar clic en pestañas no dueñas
+                }
+            } catch (_) {}
             queueUI.modal.classList.remove('hidden');
         }
 
@@ -1754,7 +1760,13 @@ ${job.completedAt ? 'Completado: ' + new Date(job.completedAt).toLocaleString() 
 
         // Inicializar UI de cola cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(initQueueUI, 100); // Delay para asegurar que importQueue esté disponible
+            setTimeout(() => {
+                initQueueUI();
+                // Aplicar inmediatamente estados owner-aware al cargar/duplicar
+                if (window.importQueue && window.importQueue.isOwner) {
+                    applyOwnerAwareStates();
+                }
+            }, 50);
         });
 
         // Botón limpieza

@@ -44,15 +44,15 @@ class ImportQueue {
 
     // ======== Gestión de ownership de pestaña ========
     getOrCreateTabId() {
+        // Generar SIEMPRE un id nuevo por carga de pestaña para evitar clones al duplicar
         try {
-            let id = sessionStorage.getItem('importQueue_tabId');
-            if (!id) {
-                id = 'tab_' + Math.random().toString(36).slice(2) + Date.now();
-                sessionStorage.setItem('importQueue_tabId', id);
-            }
+            const randomPart = (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : (Math.random().toString(36).slice(2) + Date.now());
+            const id = 'tab_' + randomPart;
+            // Guardar solo para depuración dentro de la misma carga
+            try { sessionStorage.setItem('importQueue_tabId', id); } catch {}
             return id;
         } catch (_) {
-            return 'tab_fallback_' + Date.now();
+            return 'tab_fallback_' + Date.now() + '_' + Math.random().toString(36).slice(2);
         }
     }
 
@@ -72,6 +72,10 @@ class ImportQueue {
         });
         // Liberar ownership al cerrar
         window.addEventListener('beforeunload', () => {
+            // Guardar estado de emergencia y liberar ownership SOLO si somos dueños
+            if (this.isOwnerFlag && this.hasActiveTasks()) {
+                this.saveEmergencyState();
+            }
             this.releaseOwnership();
         });
     }
@@ -521,18 +525,21 @@ class ImportQueue {
         });
 
         // Protección adicional contra navegación
-        window.addEventListener('pagehide', (event) => {
-            if (this.hasActiveTasks()) {
-                // Guardar estado de emergencia
+        window.addEventListener('pagehide', () => {
+            if (this.isOwnerFlag && this.hasActiveTasks()) {
+                // Guardar estado de emergencia solo desde la pestaña dueña
                 this.saveEmergencyState();
             }
         });
 
         // Detección de reactivación de la pestaña
         document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && this.hasActiveTasks()) {
-                // Verificar si hay trabajos perdidos y restaurar si es necesario
-                this.checkAndRestoreState();
+            if (!document.hidden) {
+                this.refreshOwnershipState();
+                if (this.isOwnerFlag && this.hasActiveTasks()) {
+                    // Verificar si hay trabajos perdidos y restaurar si es necesario
+                    this.checkAndRestoreState();
+                }
             }
         });
 
