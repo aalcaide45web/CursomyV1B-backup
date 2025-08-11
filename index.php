@@ -242,11 +242,21 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
                     </div>
                 </div>
 
-                <!-- Lista de trabajos -->
-                <div id="queueJobsList" class="p-4 space-y-3 overflow-y-auto" style="max-height: 60vh;">
+                <!-- Lista de trabajos locales (esta pestaña) -->
+                <div id="queueJobsList" class="p-4 space-y-3 overflow-y-auto" style="max-height: 30vh;">
                     <div class="text-center text-gray-400 py-8">
                         <i class="fas fa-inbox text-4xl mb-2"></i>
                         <p>No hay importaciones en la cola</p>
+                    </div>
+                </div>
+
+                <!-- Lista de trabajos en servidor (global) -->
+                <div class="border-t border-white/10"></div>
+                <div class="p-3 text-sm text-gray-300 bg-black/20">Trabajos en servidor (global)</div>
+                <div id="serverJobsList" class="p-4 space-y-3 overflow-y-auto" style="max-height: 30vh;">
+                    <div class="text-center text-gray-400 py-6">
+                        <i class="fas fa-cloud text-2xl mb-2"></i>
+                        <p>Cargando trabajos de servidor…</p>
                     </div>
                 </div>
             </div>
@@ -1020,6 +1030,14 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
             // Actualizar UI inicial
             updateQueueUI('init', null, window.importQueue);
 
+            // Iniciar polling ligero del servidor cuando el modal esté visible
+            setInterval(() => {
+                const modalVisible = !queueUI.modal.classList.contains('hidden');
+                if (modalVisible) {
+                    refreshServerJobsThrottled();
+                }
+            }, 2000);
+
             // Deshabilitar acciones en pestañas no dueñas
             applyOwnerAwareStates();
         }
@@ -1069,6 +1087,8 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
 
             // Actualizaciones del grid de cursos (index) para cursos nuevos sin recargar
             handleIndexCoursesUpdates(event, data, queue);
+            // Refrescar trabajos globales en servidor (ligero polling cuando el modal está abierto)
+            refreshServerJobsThrottled();
             // Indicar ownership en el modal
             const ownerBannerId = 'queueOwnerBanner';
             let banner = document.getElementById(ownerBannerId);
@@ -1084,6 +1104,57 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
 
             // Aplicar estado owner-aware a botones
             applyOwnerAwareStates();
+        }
+
+        // ======= Trabajos en servidor (global) =======
+        let lastServerJobsRefresh = 0;
+        async function refreshServerJobs() {
+            try {
+                const container = document.getElementById('serverJobsList');
+                if (!container) return;
+                const resp = await fetch('api/jobs.php?action=status');
+                const data = await resp.json();
+                if (!data.success) return;
+                const jobs = data.data || [];
+                if (jobs.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center text-gray-400 py-6">
+                            <i class="fas fa-inbox text-2xl mb-2"></i>
+                            <p>Sin trabajos en el servidor</p>
+                        </div>`;
+                    return;
+                }
+                container.innerHTML = jobs.map(j => renderServerJobRow(j)).join('');
+            } catch (_) {}
+        }
+
+        function refreshServerJobsThrottled() {
+            const now = Date.now();
+            if (now - lastServerJobsRefresh < 1500) return;
+            lastServerJobsRefresh = now;
+            refreshServerJobs();
+        }
+
+        function renderServerJobRow(job) {
+            const total = parseInt(job.total_items || 0, 10);
+            const processed = parseInt(job.processed_items || 0, 10);
+            const pct = total > 0 ? Math.round((processed / total) * 100) : 0;
+            const color = job.status === 'completed' ? '#22c55e' : (job.status === 'error' || job.status === 'cancelled' ? '#ef4444' : '#f97316');
+            return `
+                <div class="bg-black/20 border border-white/10 rounded p-3">
+                    <div class="flex justify-between text-sm text-gray-300 mb-1">
+                        <div>
+                            <span class="font-medium">Job #${job.id}</span>
+                            ${job.course_title ? `• ${job.course_title}` : ''}
+                            ${job.curso_id ? `• curso ${job.curso_id}` : ''}
+                        </div>
+                        <div class="text-xs text-gray-400">${job.status}</div>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-2">
+                        <div class="h-2 rounded-full" style="width:${pct}%; background-color:${color}"></div>
+                    </div>
+                    <div class="text-xs text-gray-400 mt-1">${processed}/${total} archivos</div>
+                </div>`;
         }
         function applyOwnerAwareStates() {
             try {

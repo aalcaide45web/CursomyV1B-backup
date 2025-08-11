@@ -236,20 +236,21 @@ class ImportQueue {
         this.notifyListeners('job_started', job);
         
         try {
-            // Crear curso si es necesario
-            if (job.courseMode === 'new') {
-                await this.createCourse(job);
-            }
-            
-            // Procesar secciones y archivos
+            // Asegurar job en servidor (crea curso si aplica)
+            await this.ensureServerJob(job);
+
+            // Subir todos los archivos al área temporal del servidor
+            job.statusMessage = 'Subiendo archivos al servidor...';
+            this.notifyListeners('progress_updated', job);
             await this.processJobSections(job);
-            
-            job.setStatus('completed', 'Importación completada exitosamente');
-            job.completedAt = Date.now();
-            this.notifyListeners('job_completed', job);
-            
-            // Mostrar notificación de finalización
-            this.showCompletionNotification(job);
+
+            // Finalizar fase de subida y encolar para procesamiento en servidor
+            await this.finalizeServerUploads(job);
+
+            // Iniciar sondeo del estado en servidor hasta completar
+            job.statusMessage = 'Procesando en servidor...';
+            job.phase = 'processing';
+            await this.pollServerStatus(job);
             
         } catch (error) {
             job.setStatus('error', error.message);
@@ -324,11 +325,14 @@ class ImportQueue {
                 }
                 
                 try {
+                    // Subir item al job del servidor
                     await this.uploadFile(job, file, sectionName, sectionIndex + 1, fileIndex + 1);
+                    // Progreso de fase 'uploading'
                     job.completedFiles++;
                     globalFileIndex++;
-                    job.updateProgress(`✅ ${sectionName} / ${file.name}`, globalFileIndex, totalFiles);
-                    
+                    if (job.phase !== 'processing') {
+                        job.updateProgress(`✅ ${sectionName} / ${file.name}`, globalFileIndex, totalFiles);
+                    }
                     // Guardar progreso periódicamente
                     this.saveToStorage();
                     
@@ -340,7 +344,9 @@ class ImportQueue {
                         timestamp: Date.now()
                     });
                     globalFileIndex++;
-                    job.updateProgress(`Error: ${file.name}`, globalFileIndex, totalFiles);
+                    if (job.phase !== 'processing') {
+                        job.updateProgress(`Error: ${file.name}`, globalFileIndex, totalFiles);
+                    }
                 }
             }
         }
@@ -350,32 +356,105 @@ class ImportQueue {
      * Subir un archivo individual
      */
     async uploadFile(job, file, sectionName, sectionOrder, videoOrder) {
+        // Subir archivo como item del job al servidor (fase temporal)
         const formData = new FormData();
-        formData.append('curso_id', job.courseId);
-        formData.append('seccion', sectionName);
-        formData.append('seccion_orden', sectionOrder);
-        formData.append('video_orden', videoOrder);
+        formData.append('action', 'add_item');
+        formData.append('job_id', job.serverJobId);
+        formData.append('upload_token', job.uploadToken);
+        formData.append('section_name', sectionName);
+        formData.append('section_order', sectionOrder);
+        formData.append('video_order', videoOrder);
         formData.append('file', file);
-        
-        const response = await fetch('api/upload-single.php', {
-            method: 'POST',
-            body: formData
-        });
-        
-        const text = await response.text();
+
+        const resp = await fetch('api/jobs.php?action=add_item', { method: 'POST', body: formData });
+        const text = await resp.text();
         let data = {};
-        
-        try {
-            data = JSON.parse(text);
-        } catch (e) {
-            throw new Error('Respuesta del servidor inválida');
-        }
-        
-        if (!data.success) {
-            throw new Error(data.message || 'Error en la subida');
-        }
-        
+        try { data = JSON.parse(text); } catch (_) { throw new Error('Respuesta del servidor inválida'); }
+        if (!data.success) throw new Error(data.message || 'Error en la subida');
         return data;
+    }
+
+    async ensureServerJob(job) {
+        if (job.serverJobId && job.uploadToken) return;
+        if (job.courseMode === 'new' && !job.courseTitle) throw new Error('Título de curso requerido');
+
+        const formData = new FormData();
+        formData.append('action', 'create');
+        formData.append('mode', job.courseMode);
+        if (job.courseMode === 'existing') {
+            formData.append('curso_id', job.courseId);
+        } else {
+            formData.append('titulo', job.courseTitle);
+        }
+
+        const resp = await fetch('api/jobs.php?action=create', { method: 'POST', body: formData });
+        const data = await resp.json();
+        if (!data.success) throw new Error(data.message || 'No se pudo crear el job en servidor');
+        job.serverJobId = data.data.job_id;
+        job.uploadToken = data.data.upload_token;
+        if (data.data.curso_id) {
+            job.courseId = data.data.curso_id;
+            // Notificar creación para placeholder en index
+            this.notifyListeners('job_course_created', job);
+        }
+    }
+
+    async finalizeServerUploads(job) {
+        const formData = new FormData();
+        formData.append('action', 'finalize_uploads');
+        formData.append('job_id', job.serverJobId);
+        formData.append('upload_token', job.uploadToken);
+        const resp = await fetch('api/jobs.php?action=finalize_uploads', { method: 'POST', body: formData });
+        const data = await resp.json();
+        if (!data.success) throw new Error(data.message || 'No se pudo finalizar la subida');
+    }
+
+    async serverWorkerTick(max = 5) {
+        try {
+            await fetch(`api/jobs-worker.php?max=${max}`);
+        } catch (_) {}
+    }
+
+    async pollServerStatus(job) {
+        // Bucle hasta estado terminal
+        const pollOnce = async () => {
+            await this.serverWorkerTick(5);
+            const resp = await fetch(`api/jobs.php?action=status&job_id=${encodeURIComponent(job.serverJobId)}`);
+            const data = await resp.json();
+            if (!data.success) return false;
+            const j = data.data.job;
+            const total = parseInt(j.total_items || 0, 10);
+            const processed = parseInt(j.processed_items || 0, 10);
+            job.updateProgress('Procesando en servidor...', processed, total);
+            // Mapear estado servidor → cliente
+            const status = j.status;
+            if (status === 'completed') {
+                job.setStatus('completed', 'Importación completada');
+                job.completedAt = Date.now();
+                this.notifyListeners('job_completed', job);
+                this.showCompletionNotification(job);
+                return true;
+            }
+            if (status === 'cancelled') {
+                job.setStatus('cancelled', 'Cancelado');
+                this.notifyListeners('job_cancelled', job);
+                return true;
+            }
+            if (status === 'error') {
+                job.setStatus('error', 'Error en procesamiento');
+                this.notifyListeners('job_error', job);
+                return true;
+            }
+            // Continuar
+            return false;
+        };
+
+        // Hacer varios ciclos hasta terminar
+        for (;;) {
+            const done = await pollOnce();
+            if (done) break;
+            await new Promise(r => setTimeout(r, 1500));
+        }
     }
 
     /**
@@ -790,6 +869,10 @@ class ImportJob {
         this.startedAt = null;
         this.completedAt = null;
         this.statusMessage = 'En cola';
+        // Integración con cola en servidor
+        this.serverJobId = config.serverJobId || null;
+        this.uploadToken = config.uploadToken || null;
+        this.phase = config.phase || 'uploading'; // uploading | processing
     }
 
     getTotalFiles() {
@@ -848,7 +931,10 @@ class ImportJob {
             createdAt: this.createdAt,
             startedAt: this.startedAt,
             completedAt: this.completedAt,
-            statusMessage: this.statusMessage
+            statusMessage: this.statusMessage,
+            serverJobId: this.serverJobId,
+            uploadToken: this.uploadToken,
+            phase: this.phase
         };
     }
 
@@ -859,7 +945,10 @@ class ImportJob {
             courseMode: data.courseMode,
             courseId: data.courseId,
             sections: new Map(data.sections || []),
-            createdAt: data.createdAt
+            createdAt: data.createdAt,
+            serverJobId: data.serverJobId || null,
+            uploadToken: data.uploadToken || null,
+            phase: data.phase || 'uploading'
         });
         
         job.status = data.status;

@@ -8,6 +8,8 @@ define('UPLOAD_DIR', __DIR__ . '/../uploads/');
 define('VIDEOS_DIR', UPLOAD_DIR . 'videos/');
 define('IMAGES_DIR', UPLOAD_DIR . 'images/');
 define('RESOURCES_DIR', UPLOAD_DIR . 'resources/');
+// Directorio temporal para subidas de la cola del servidor
+define('TMP_UPLOADS_DIR', UPLOAD_DIR . 'tmp/');
 
 // Configuración de videos y recursos
 define('MAX_VIDEO_SIZE', 500 * 1024 * 1024 * 1024); // 500GB en bytes
@@ -18,7 +20,7 @@ define('ALLOWED_RESOURCE_TYPES', []);
 
 // Crear directorios si no existen
 function createUploadDirectories() {
-    $directories = [UPLOAD_DIR, VIDEOS_DIR, IMAGES_DIR, RESOURCES_DIR];
+    $directories = [UPLOAD_DIR, VIDEOS_DIR, IMAGES_DIR, RESOURCES_DIR, TMP_UPLOADS_DIR];
     
     foreach ($directories as $dir) {
         if (!is_dir($dir)) {

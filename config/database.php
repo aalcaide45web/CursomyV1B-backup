@@ -129,6 +129,38 @@ function createTables($pdo) {
             url TEXT NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (clase_id) REFERENCES clases(id) ON DELETE CASCADE
+        )",
+
+        // Tabla de trabajos (cola en servidor)
+        "CREATE TABLE IF NOT EXISTS jobs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            upload_token VARCHAR(64) NOT NULL,
+            curso_id INTEGER,
+            mode VARCHAR(20) NOT NULL, -- 'new' | 'existing'
+            course_title VARCHAR(255),
+            status VARCHAR(20) DEFAULT 'creating', -- creating|uploading|queued|processing|paused|cancelled|completed|error
+            total_items INTEGER DEFAULT 0,
+            processed_items INTEGER DEFAULT 0,
+            error_count INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (curso_id) REFERENCES cursos(id) ON DELETE SET NULL
+        )",
+
+        // Tabla de items de trabajo (cada archivo)
+        "CREATE TABLE IF NOT EXISTS job_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            job_id INTEGER NOT NULL,
+            section_name VARCHAR(255) NOT NULL,
+            section_order INTEGER DEFAULT 1,
+            video_order INTEGER DEFAULT 1,
+            original_name VARCHAR(255) NOT NULL,
+            temp_path TEXT NOT NULL,
+            status VARCHAR(20) DEFAULT 'uploaded', -- uploaded|queued|processing|done|error|cancelled
+            message TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
         )"
     ];
     
