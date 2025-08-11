@@ -48,10 +48,10 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <a href="index.php" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-purple-500/40 bg-black/20 text-purple-200 hover:bg-black/30">
+                <a href="index.php" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-white" style="background-color:#4b5563" onmouseover="this.style.backgroundColor='#374151'" onmouseout="this.style.backgroundColor='#4b5563'">
                     <i class="fas fa-arrow-left"></i><span class="hidden sm:inline">Volver</span>
                 </a>
-                <button onclick="openGlobalSearchModal()" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-purple-400/40 bg-black/20 text-purple-200 hover:bg-black/30">
+                <button onclick="openGlobalSearchModal()" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-white" style="background-color:#7c3aed" onmouseover="this.style.backgroundColor='#6d28d9'" onmouseout="this.style.backgroundColor='#7c3aed'">
                     <i class="fas fa-search"></i><span class="hidden sm:inline">Buscador Global</span>
                 </button>
             </div>

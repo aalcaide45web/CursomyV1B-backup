@@ -134,13 +134,13 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <button onclick="openGlobalSearchModal()" class="inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg border border-purple-400/40 bg-black/20 text-purple-200 hover:bg-black/30 text-xs sm:text-sm">
+                <button onclick="openGlobalSearchModal()" class="inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg text-white text-xs sm:text-sm" style="background-color:#7c3aed" onmouseover="this.style.backgroundColor='#6d28d9'" onmouseout="this.style.backgroundColor='#7c3aed'">
                     <i class="fas fa-search"></i><span class="hidden sm:inline">Buscador Global</span>
                 </button>
-                <button onclick="openEditCourseModal()" class="inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg border border-blue-400/40 bg-black/20 text-blue-200 hover:bg-black/30 text-xs sm:text-sm">
+                <button onclick="openEditCourseModal()" class="inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg text-white text-xs sm:text-sm" style="background-color:#2563eb" onmouseover="this.style.backgroundColor='#1d4ed8'" onmouseout="this.style.backgroundColor='#2563eb'">
                     <i class="fas fa-edit"></i><span class="hidden sm:inline">Editar Curso</span>
                 </button>
-                <a href="index.php" class="inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg border border-gray-400/40 bg-black/20 text-gray-200 hover:bg-black/30 text-xs sm:text-sm">
+                <a href="index.php" class="inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg text-white text-xs sm:text-sm" style="background-color:#4b5563" onmouseover="this.style.backgroundColor='#374151'" onmouseout="this.style.backgroundColor='#4b5563'">
                     <i class="fas fa-arrow-left"></i><span class="hidden sm:inline">Volver</span>
                 </a>
             </div>

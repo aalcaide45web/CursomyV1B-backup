@@ -366,21 +366,21 @@ $videoPath = 'uploads/videos/' . $clase['curso_id'] . '/' . $clase['archivo_vide
             </div>
             <div class="flex space-x-2">
                 <?php if ($editMode): ?>
-                    <button onclick="saveChanges()" class="bg-green-600 hover:bg-green-700 text-white px-2 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-sm">
+                    <button onclick="saveChanges()" class="text-white px-2 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-sm" style="background-color:#22c55e" onmouseover="this.style.backgroundColor='#16a34a'" onmouseout="this.style.backgroundColor='#22c55e'">
                         <i class="fas fa-save mr-2"></i><span class="hidden sm:inline">Guardar</span>
                     </button>
-                    <a href="reproductor.php?clase=<?php echo $claseId; ?>" class="bg-gray-600 hover:bg-gray-700 text-white px-2 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-sm">
+                    <a href="reproductor.php?clase=<?php echo $claseId; ?>" class="text-white px-2 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-sm" style="background-color:#4b5563" onmouseover="this.style.backgroundColor='#374151'" onmouseout="this.style.backgroundColor='#4b5563'">
                         <i class="fas fa-times mr-2"></i><span class="hidden sm:inline">Cancelar</span>
                     </a>
                 <?php else: ?>
-                    <a href="reproductor.php?clase=<?php echo $claseId; ?>&edit=1" class="bg-blue-600 hover:bg-blue-700 text-white px-2 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-sm">
+                    <a href="reproductor.php?clase=<?php echo $claseId; ?>&edit=1" class="text-white px-2 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-sm" style="background-color:#2563eb" onmouseover="this.style.backgroundColor='#1d4ed8'" onmouseout="this.style.backgroundColor='#2563eb'">
                         <i class="fas fa-edit mr-2"></i><span class="hidden sm:inline">Editar</span>
                     </a>
                 <?php endif; ?>
-                <button onclick="openGlobalSearchModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-2 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-sm">
+                <button onclick="openGlobalSearchModal()" class="text-white px-2 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-sm" style="background-color:#7c3aed" onmouseover="this.style.backgroundColor='#6d28d9'" onmouseout="this.style.backgroundColor='#7c3aed'">
                     <i class="fas fa-search mr-2"></i><span class="hidden sm:inline">Buscador Global</span>
                 </button>
-                <a href="curso.php?id=<?php echo $clase['curso_id']; ?>" class="bg-purple-600 hover:bg-purple-700 text-white px-2 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-sm">
+                <a href="curso.php?id=<?php echo $clase['curso_id']; ?>" class="text-white px-2 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-sm" style="background-color:#4b5563" onmouseover="this.style.backgroundColor='#374151'" onmouseout="this.style.backgroundColor='#4b5563'">
                     <i class="fas fa-arrow-left mr-2"></i><span class="hidden sm:inline">Volver al Curso</span>
                 </a>
             </div>

@@ -80,27 +80,27 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
 
             <!-- Acciones -->
             <div class="flex items-center gap-2">
-                <a href="debug-console.php" class="hidden md:inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-yellow-400/40 bg-black/20 text-yellow-300 hover:bg-black/30" title="Consola de Debug">
+                <a href="debug-console.php" class="hidden md:inline-flex items-center gap-2 px-3 py-2 rounded-lg text-white" style="background-color:#a16207" onmouseover="this.style.backgroundColor='#ca8a04'" onmouseout="this.style.backgroundColor='#a16207'" title="Consola de Debug">
                     <i class="fas fa-bug"></i><span class="hidden lg:inline">Debug</span>
                 </a>
-                <a href="logs-viewer.php" class="hidden md:inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-blue-400/40 bg-black/20 text-blue-300 hover:bg-black/30" title="Visor de Logs">
+                <a href="logs-viewer.php" class="hidden md:inline-flex items-center gap-2 px-3 py-2 rounded-lg text-white" style="background-color:#2563eb" onmouseover="this.style.backgroundColor='#1d4ed8'" onmouseout="this.style.backgroundColor='#2563eb'" title="Visor de Logs">
                     <i class="fas fa-file-text"></i><span class="hidden lg:inline">Logs</span>
                 </a>
-                <button id="cleanupBtn" class="inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg border border-red-400/40 bg-black/20 text-red-200 hover:bg-black/30 text-xs sm:text-sm" title="Limpiar carpetas huérfanas">
+                <button id="cleanupBtn" class="inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg text-white text-xs sm:text-sm" style="background-color:#dc2626" onmouseover="this.style.backgroundColor='#b91c1c'" onmouseout="this.style.backgroundColor='#dc2626'" title="Limpiar carpetas huérfanas">
                     <i class="fas fa-broom"></i><span class="hidden sm:inline">Limpieza BD</span>
                 </button>
-                <button onclick="openGlobalSearchModal()" class="inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg border border-purple-400/40 bg-black/20 text-purple-200 hover:bg-black/30 text-xs sm:text-sm" title="Buscar en todos los cursos">
+                <button onclick="openGlobalSearchModal()" class="inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg text-white text-xs sm:text-sm" style="background-color:#7c3aed" onmouseover="this.style.backgroundColor='#6d28d9'" onmouseout="this.style.backgroundColor='#7c3aed'" title="Buscar en todos los cursos">
                     <i class="fas fa-search"></i><span class="hidden sm:inline">Buscador Global</span>
                 </button>
                 <!-- Botón de progreso de importaciones -->
-                <button id="queueProgressBtn" onclick="openQueueProgressModal()" class="relative inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg border border-orange-400/40 bg-black/20 text-orange-200 hover:bg-black/30 text-xs sm:text-sm" title="Progreso de importaciones">
+                <button id="queueProgressBtn" onclick="openQueueProgressModal()" class="relative inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg text-white text-xs sm:text-sm" style="background-color:#0d9488" onmouseover="this.style.backgroundColor='#0f766e'" onmouseout="this.style.backgroundColor='#0d9488'" title="Progreso de importaciones">
                     <i class="fas fa-tasks"></i><span class="hidden sm:inline">Progreso</span>
                     <span id="queueBadge" class="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center hidden">0</span>
                 </button>
-                <button onclick="openFolderPicker()" class="inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg border border-blue-400/40 bg-black/20 text-blue-200 hover:bg-black/30 text-xs sm:text-sm" title="Importar carpeta(s)">
+                <button id="importFolderBtn" onclick="openFolderPicker()" class="inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg text-white text-xs sm:text-sm" style="background-color:#0d9488" onmouseover="this.style.backgroundColor='#0f766e'" onmouseout="this.style.backgroundColor='#0d9488'" title="Importar carpeta(s)">
                     <i class="fas fa-folder-open"></i><span class="hidden sm:inline">Importar Carpeta</span>
                 </button>
-                <button onclick="openCreateCourseModal()" class="inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg border border-purple-500/40 bg-black/20 text-purple-200 hover:bg-black/30 text-xs sm:text-sm">
+                <button onclick="openCreateCourseModal()" class="inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg text-white text-xs sm:text-sm" style="background-color:#8b5cf6" onmouseover="this.style.backgroundColor='#7c3aed'" onmouseout="this.style.backgroundColor='#8b5cf6'">
                     <i class="fas fa-plus"></i><span class="hidden sm:inline">Nuevo Curso</span>
                 </button>
             </div>
@@ -113,7 +113,7 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
     <div id="folderImportModal" class="fixed inset-0 bg-black/60 hidden z-50">
         <div class="flex items-center justify-center min-h-screen p-4">
             <div class="glass-dark rounded-lg w-full max-w-5xl overflow-hidden">
-                <div class="bg-black/30 p-4 border-b border-white/10 flex items-center justify-between">
+                <div id="queueModalHeader" class="bg-black/30 p-4 border-b border-white/10 flex items-center justify-between">
                     <h3 class="text-xl font-bold text-white"><i class="fas fa-folder-open mr-2"></i>Importar desde Carpeta</h3>
                     <div class="flex items-center gap-2">
                         <button id="impExpandAll" class="text-white/80 bg-black/40 hover:bg-black/50 rounded px-2 py-1 text-xs" title="Expandir todas"><i class="fas fa-chevron-down"></i> Expandir todas</button>
@@ -1000,6 +1000,9 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
             
             // Actualizar UI inicial
             updateQueueUI('init', null, window.importQueue);
+
+            // Deshabilitar acciones en pestañas no dueñas
+            applyOwnerAwareStates();
         }
 
         // Actualizar UI según eventos de la cola
@@ -1027,7 +1030,7 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
             document.getElementById('queueStatsCompleted').textContent = `${stats.completed} completados`;
             document.getElementById('queueStatsErrors').textContent = `${stats.error} errores`;
             
-            // Actualizar botones de pausa/reanudar
+            // Actualizar botones de pausa/reanudar (solo habilitados si esta pestaña es dueña)
             const isPaused = queue.isPaused;
             const isProcessing = queue.isProcessing;
             document.getElementById('queuePauseBtn').classList.toggle('hidden', !isProcessing || isPaused);
@@ -1047,6 +1050,88 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
 
             // Actualizaciones del grid de cursos (index) para cursos nuevos sin recargar
             handleIndexCoursesUpdates(event, data, queue);
+            // Indicar ownership en el modal
+            const ownerBannerId = 'queueOwnerBanner';
+            let banner = document.getElementById(ownerBannerId);
+            const isOwner = queue.isOwner ? queue.isOwner() : true;
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = ownerBannerId;
+                banner.className = 'text-xs text-gray-300 px-4 py-1';
+                const header = document.getElementById('queueModalHeader');
+                if (header) header.appendChild(banner);
+            }
+            banner.textContent = isOwner ? 'Esta pestaña controla la cola' : 'Modo solo lectura (otra pestaña controla la cola)';
+
+            // Aplicar estado owner-aware a botones
+            applyOwnerAwareStates();
+        }
+        function applyOwnerAwareStates() {
+            try {
+                const isOwner = window.importQueue && window.importQueue.isOwner ? window.importQueue.isOwner() : true;
+                const importBtn = document.getElementById('importFolderBtn');
+                if (importBtn) {
+                    if (!isOwner) {
+                        importBtn.disabled = true;
+                        importBtn.style.backgroundColor = '#374151';
+                        importBtn.style.color = '#9ca3af';
+                        importBtn.style.borderColor = '#4b5563';
+                        importBtn.style.cursor = 'not-allowed';
+                        importBtn.onmouseover = null;
+                        importBtn.onmouseout = null;
+                        importBtn.title = 'Otra pestaña controla la cola';
+                    } else {
+                        importBtn.disabled = false;
+                        importBtn.style.backgroundColor = '#0d9488';
+                        importBtn.style.color = '#ffffff';
+                        importBtn.style.borderColor = '';
+                        importBtn.style.cursor = '';
+                        importBtn.onmouseover = function(){ this.style.backgroundColor='#0f766e'; };
+                        importBtn.onmouseout = function(){ this.style.backgroundColor='#0d9488'; };
+                        importBtn.title = 'Importar carpeta(s)';
+                    }
+                }
+                // Botón Progreso
+                const progressBtn = document.getElementById('queueProgressBtn');
+                if (progressBtn) {
+                    if (!isOwner) {
+                        progressBtn.disabled = true;
+                        progressBtn.style.backgroundColor = '#374151';
+                        progressBtn.style.color = '#9ca3af';
+                        progressBtn.style.borderColor = '#4b5563';
+                        progressBtn.style.cursor = 'not-allowed';
+                        progressBtn.onmouseover = null;
+                        progressBtn.onmouseout = null;
+                        progressBtn.title = 'Otra pestaña controla la cola';
+                    } else {
+                        progressBtn.disabled = false;
+                        progressBtn.style.backgroundColor = '#0d9488';
+                        progressBtn.style.color = '#ffffff';
+                        progressBtn.style.borderColor = '';
+                        progressBtn.style.cursor = '';
+                        progressBtn.onmouseover = function(){ this.style.backgroundColor='#0f766e'; };
+                        progressBtn.onmouseout = function(){ this.style.backgroundColor='#0d9488'; };
+                        progressBtn.title = 'Progreso de importaciones';
+                    }
+                }
+                // Botón "Añadir a Cola" dentro del modal
+                const addBtn = document.getElementById('startFolderImportBtn') || document.getElementById('addToQueueBtn');
+                if (addBtn) {
+                    if (!isOwner) {
+                        addBtn.disabled = true;
+                        addBtn.style.backgroundColor = '#374151';
+                        addBtn.style.color = '#9ca3af';
+                        addBtn.style.cursor = 'not-allowed';
+                        addBtn.title = 'Otra pestaña controla la cola';
+                    } else {
+                        addBtn.disabled = false;
+                        addBtn.style.backgroundColor = '';
+                        addBtn.style.color = '';
+                        addBtn.style.cursor = '';
+                        addBtn.title = '';
+                    }
+                }
+            } catch (e) { console.warn('[OWNER_AWARE] fallo', e); }
         }
 
         // Renderizar lista de trabajos
@@ -1302,7 +1387,7 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
         function toggleQueuePause() {
             if (window.importQueue.isPaused) {
                 window.importQueue.resumeQueue();
-            } else {
+                    } else {
                 window.importQueue.pauseQueue();
             }
         }

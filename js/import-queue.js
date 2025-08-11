@@ -11,12 +11,21 @@ class ImportQueue {
         this.currentJob = null;
         this.storageKey = 'importQueue_v2';
         this.listeners = new Set();
+        // Propiedad de pestaña (single-tab owner)
+        this.ownerLockKey = 'importQueue_owner';
+        this.ownerHeartbeatKey = 'importQueue_owner_heartbeat';
+        this.ownerHeartbeatMs = 15000; // 15s de tolerancia
+        this.tabId = this.getOrCreateTabId();
+        this.isOwnerFlag = false;
         
         // Cargar cola persistente
         this.loadFromStorage();
         
         // Setup event listeners
         this.setupUnloadProtection();
+
+        // Inicializar ownership y latido
+        this.initializeOwnership();
         
         // Auto-iniciar procesamiento si hay trabajos pendientes
         if (this.hasActiveTasks()) {
@@ -31,6 +40,110 @@ class ImportQueue {
                 this.processQueue();
             }
         }, 30000);
+    }
+
+    // ======== Gestión de ownership de pestaña ========
+    getOrCreateTabId() {
+        try {
+            let id = sessionStorage.getItem('importQueue_tabId');
+            if (!id) {
+                id = 'tab_' + Math.random().toString(36).slice(2) + Date.now();
+                sessionStorage.setItem('importQueue_tabId', id);
+            }
+            return id;
+        } catch (_) {
+            return 'tab_fallback_' + Date.now();
+        }
+    }
+
+    initializeOwnership() {
+        // Intentar reclamar si no hay dueño o está expirado
+        this.refreshOwnershipState();
+        if (!this.isOwnerFlag) {
+            this.tryClaimOwnership();
+        }
+        // Heartbeat
+        setInterval(() => this.heartbeat(), 5000);
+        // Escuchar cambios entre pestañas
+        window.addEventListener('storage', (e) => {
+            if (e.key === this.ownerLockKey || e.key === this.ownerHeartbeatKey) {
+                this.refreshOwnershipState();
+            }
+        });
+        // Liberar ownership al cerrar
+        window.addEventListener('beforeunload', () => {
+            this.releaseOwnership();
+        });
+    }
+
+    getOwnerInfo() {
+        try { return JSON.parse(localStorage.getItem(this.ownerLockKey) || 'null'); } catch { return null; }
+    }
+
+    isOwner() {
+        return !!this.isOwnerFlag;
+    }
+
+    refreshOwnershipState() {
+        const info = this.getOwnerInfo();
+        const now = Date.now();
+        let ownerAlive = false;
+        if (info && info.tabId && typeof info.timestamp === 'number') {
+            const hb = parseInt(localStorage.getItem(this.ownerHeartbeatKey) || '0', 10);
+            const last = Math.max(info.timestamp, hb || 0);
+            ownerAlive = (now - last) < this.ownerHeartbeatMs;
+        }
+        const prev = this.isOwnerFlag;
+        this.isOwnerFlag = info && info.tabId === this.tabId && ownerAlive;
+        if (prev !== this.isOwnerFlag) {
+            this.notifyListeners('ownership_update', { isOwner: this.isOwnerFlag, owner: info });
+        }
+    }
+
+    tryClaimOwnership() {
+        const info = this.getOwnerInfo();
+        const now = Date.now();
+        let canClaim = true;
+        if (info && info.tabId) {
+            const hb = parseInt(localStorage.getItem(this.ownerHeartbeatKey) || '0', 10);
+            const last = Math.max(info.timestamp || 0, hb || 0);
+            canClaim = (now - last) >= this.ownerHeartbeatMs; // dueño ausente
+        }
+        if (canClaim) {
+            const newInfo = { tabId: this.tabId, timestamp: now };
+            try { localStorage.setItem(this.ownerLockKey, JSON.stringify(newInfo)); } catch {}
+            this.isOwnerFlag = true;
+            this.notifyListeners('ownership_update', { isOwner: true, owner: newInfo });
+        } else {
+            this.isOwnerFlag = false;
+        }
+    }
+
+    heartbeat() {
+        if (this.isOwnerFlag) {
+            try {
+                localStorage.setItem(this.ownerHeartbeatKey, String(Date.now()));
+                // refrescar lock timestamp periódicamente
+                const current = this.getOwnerInfo() || { tabId: this.tabId };
+                localStorage.setItem(this.ownerLockKey, JSON.stringify({ tabId: current.tabId, timestamp: Date.now() }));
+            } catch {}
+        } else {
+            // comprobar si podemos reclamar (dueño cayó)
+            this.refreshOwnershipState();
+        }
+    }
+
+    releaseOwnership() {
+        if (this.isOwnerFlag) {
+            try {
+                const info = this.getOwnerInfo();
+                if (info && info.tabId === this.tabId) {
+                    localStorage.removeItem(this.ownerLockKey);
+                    localStorage.removeItem(this.ownerHeartbeatKey);
+                }
+            } catch {}
+        }
+        this.isOwnerFlag = false;
     }
 
     /**
@@ -62,6 +175,11 @@ class ImportQueue {
      * Procesar cola de trabajos
      */
     async processQueue() {
+        // Solo el dueño de la cola puede procesar
+        if (!this.isOwner()) {
+            console.log('[QUEUE] processQueue bloqueado: pestaña no dueña');
+            return;
+        }
         if (this.isProcessing || this.isPaused) {
             console.log('[QUEUE] ProcessQueue bloqueado:', { isProcessing: this.isProcessing, isPaused: this.isPaused });
             return;
