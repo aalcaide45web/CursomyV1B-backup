@@ -208,7 +208,7 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
                 
                 <div class="bg-black/20 rounded-lg p-4 border border-white/10">
                     <h4 class="text-white font-semibold mb-2">Progreso</h4>
-                    <div id="courseProgress" class="text-gray-300 text-sm max-h-32 overflow-y-auto pr-2" style="scrollbar-width: thin;">Cargando...</div>
+                    <div id="courseProgress" class="text-gray-300 text-sm max-h-[70vh] overflow-y-auto pr-2" style="scrollbar-width: thin;">Cargando...</div>
                     <div class="flex flex-wrap items-center gap-2 mt-3">
                         <button id="resumeLastBtn" class="bg-green-600 hover:bg-green-700 text-white px-2 sm:px-3 py-2 rounded text-xs sm:text-sm disabled:opacity-50" title="Reanudar" disabled>
                             <i class="fas fa-play"></i>
