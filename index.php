@@ -93,7 +93,7 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
                     <i class="fas fa-search"></i><span class="hidden sm:inline">Buscador Global</span>
                 </button>
                 <!-- Botón de progreso de importaciones -->
-                <button id="queueProgressBtn" onclick="openQueueProgressModal()" class="relative inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg border border-orange-400/40 bg-black/20 text-orange-200 hover:bg-black/30 text-xs sm:text-sm hidden" title="Progreso de importaciones">
+                <button id="queueProgressBtn" onclick="openQueueProgressModal()" class="relative inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg border border-orange-400/40 bg-black/20 text-orange-200 hover:bg-black/30 text-xs sm:text-sm" title="Progreso de importaciones">
                     <i class="fas fa-tasks"></i><span class="hidden sm:inline">Progreso</span>
                     <span id="queueBadge" class="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center hidden">0</span>
                 </button>
@@ -1018,8 +1018,7 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
             const stats = queue.getStats();
             const hasActive = stats.pending > 0 || stats.processing > 0;
             
-            // Actualizar botón y badge
-            queueUI.progressBtn.classList.toggle('hidden', stats.total === 0);
+            // Botón siempre visible; solo ocultar el badge si no hay activos
             queueUI.badge.classList.toggle('hidden', !hasActive);
             queueUI.badge.textContent = hasActive ? (stats.pending + stats.processing) : '0';
             
@@ -1034,10 +1033,13 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
             document.getElementById('queuePauseBtn').classList.toggle('hidden', !isProcessing || isPaused);
             document.getElementById('queueResumeBtn').classList.toggle('hidden', !isPaused);
             
-            // Actualizar lista de trabajos según el evento
-            const eventsToRender = ['progress_updated', 'job_started', 'job_completed', 'job_error', 'init', 'job_added', 'job_cancelled', 'section_cancelled', 'file_cancelled', 'queue_cleaned'];
-            if (eventsToRender.includes(event)) {
+            // Actualizar lista de trabajos SOLO en eventos estructurales (no en cada tick de progreso)
+            const structuralEvents = ['init','job_added','job_cancelled','job_started','job_completed','job_error','section_cancelled','file_cancelled','queue_cleaned'];
+            if (structuralEvents.includes(event)) {
                 renderQueueJobs(queue);
+            } else if (event === 'progress_updated' && data) {
+                // Actualizar solo el job afectado para mantener desplegables abiertos
+                updateSingleJobUI(data);
             }
             
             // Actualizar progreso global
@@ -1066,6 +1068,33 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
             
             // Añadir event listeners para menús contextuales
             setupJobContextMenus();
+        }
+
+        // Actualizar SOLO una card de trabajo (barra, textos) sin re-render de la lista
+        function updateSingleJobUI(job) {
+            try {
+                const card = queueUI.jobsList.querySelector(`[data-job-id="${job.id}"]`);
+                if (!card) return;
+                const progress = job.getProgressPercentage();
+                // Barra
+                const bar = card.querySelector('.job-progress-bar');
+                if (bar) {
+                    bar.style.width = progress + '%';
+                    bar.style.backgroundColor = getBarColor(job.status);
+                }
+                // Texto X/Y
+                const txt = card.querySelector('.job-progress-text');
+                if (txt) txt.textContent = `${job.progress.completed}/${job.progress.total} archivos`;
+                // Mensaje actual
+                const msg = card.querySelector('.job-progress-msg');
+                if (msg) msg.textContent = job.progress.current || '';
+            } catch (e) { console.warn('[UI][updateSingleJobUI] error', e); }
+        }
+
+        function getBarColor(status) {
+            if (status === 'completed') return '#22c55e'; // green-500
+            if (status === 'error' || status === 'cancelled') return '#ef4444'; // red-500
+            return '#f97316'; // orange-500 processing
         }
 
         // ======= Gestión de tarjetas en el grid (index) para cursos NUEVOS =======
@@ -1186,12 +1215,13 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
                     <!-- Barra de progreso -->
                     <div class="mb-2">
                         <div class="flex justify-between text-xs text-gray-400 mb-1">
-                            <span>${job.progress.completed}/${job.progress.total} archivos</span>
+                            <span class="job-progress-text">${job.progress.completed}/${job.progress.total} archivos</span>
                             <span>${progress}%</span>
                         </div>
                         <div class="w-full bg-gray-700 rounded-full h-2">
-                            <div class="bg-${job.status === 'error' ? 'red' : job.status === 'completed' ? 'green' : 'orange'}-500 h-2 rounded-full transition-all duration-300" style="width: ${progress}%"></div>
+                            <div class="job-progress-bar h-2 rounded-full transition-all duration-300" style="width: ${progress}%; background-color: ${getBarColor(job.status)}"></div>
                         </div>
+                        ${job.progress.current ? `<div class="text-xs text-gray-400 mt-1 job-progress-msg">${job.progress.current}</div>` : ''}
                     </div>
                     
                     <!-- Errores (si los hay) -->

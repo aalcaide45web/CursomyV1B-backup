@@ -619,6 +619,18 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
     </script>
     <script src="js/curso.js"></script>
     <script>
+        // Sincronización automática SOLO la primera vez que se abre el curso tras crearlo
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const onceKey = `courseSyncedOnce:${CURSO_ID}`;
+                if (!localStorage.getItem(onceKey)) {
+                    console.log('[COURSE][AUTO_SYNC] primera vez, sincronizando duraciones...');
+                    await fetch(`api/sync-durations.php?curso_id=${CURSO_ID}`);
+                    try { await scanDurations({ force: false }); } catch (e) { console.warn('[COURSE][AUTO_SCAN] fallo', e); }
+                    localStorage.setItem(onceKey, '1');
+                }
+            } catch (e) { console.warn('[COURSE][AUTO_SYNC] error', e); }
+        });
         // Cargar y pintar progreso del curso y habilitar acciones
         document.addEventListener('DOMContentLoaded', async () => {
             try {
