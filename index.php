@@ -57,6 +57,22 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
+        /* Vista lista para el grid de cursos */
+        #coursesGrid.list-view {
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+        }
+        #coursesGrid.list-view .course-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        #coursesGrid.list-view .course-card > .h-48 {
+            display: none;
+        }
+        #coursesGrid.list-view .course-card > .p-4 {
+            padding: 12px;
+            width: 100%;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen">
@@ -76,7 +92,7 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
                         <i class="fas fa-users"></i><span class="hidden sm:inline">Instructores & Temáticas</span>
                     </a>
                 </div>
-            </div>
+            </div>            
 
             <!-- Acciones -->
             <div class="flex items-center gap-2">
@@ -91,6 +107,9 @@ $tematicas = $db->query("SELECT * FROM tematicas ORDER BY nombre")->fetchAll();
                 </button>
                 <button onclick="openGlobalSearchModal()" class="inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg text-white text-xs sm:text-sm" style="background-color:#7c3aed" onmouseover="this.style.backgroundColor='#6d28d9'" onmouseout="this.style.backgroundColor='#7c3aed'" title="Buscar en todos los cursos">
                     <i class="fas fa-search"></i><span class="hidden sm:inline">Buscador Global</span>
+                </button>
+                <button id="toggleViewBtn" class="inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg text-white text-xs sm:text-sm" style="background-color:#6b7280" onmouseover="this.style.backgroundColor='#52525b'" onmouseout="this.style.backgroundColor='#6b7280'" title="Cambiar vista">
+                    <i class="fas fa-th-large" id="toggleViewIcon"></i><span class="hidden sm:inline" id="toggleViewText">Tarjetas</span>
                 </button>
                 <!-- Botón de progreso de importaciones -->
                 <button id="queueProgressBtn" onclick="openQueueProgressModal()" class="relative inline-flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg text-white text-xs sm:text-sm" style="background-color:#0d9488" onmouseover="this.style.backgroundColor='#0f766e'" onmouseout="this.style.backgroundColor='#0d9488'" title="Progreso de importaciones">

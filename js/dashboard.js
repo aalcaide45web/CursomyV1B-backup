@@ -14,6 +14,17 @@ function initializeDashboard() {
     
     // Configurar filtros
     setupFilters();
+
+    // Vista persistida
+    const savedView = localStorage.getItem('dashboard_view') || 'cards';
+    const grid = document.getElementById('coursesGrid');
+    if (savedView === 'list' && grid) {
+        grid.classList.add('list-view');
+        const icon = document.getElementById('toggleViewIcon');
+        const text = document.getElementById('toggleViewText');
+        if (icon) icon.className = 'fas fa-list';
+        if (text) text.textContent = 'Lista';
+    }
 }
 
 function setupEventListeners() {
@@ -27,6 +38,26 @@ function setupEventListeners() {
     
     // Form de crear curso
     document.getElementById('createCourseForm').addEventListener('submit', handleCreateCourse);
+
+    // Toggle vista tarjetas/lista
+    const toggleBtn = document.getElementById('toggleViewBtn');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            const grid = document.getElementById('coursesGrid');
+            const icon = document.getElementById('toggleViewIcon');
+            const text = document.getElementById('toggleViewText');
+            const listMode = grid.classList.toggle('list-view');
+            if (listMode) {
+                icon.className = 'fas fa-list';
+                text.textContent = 'Lista';
+                localStorage.setItem('dashboard_view', 'list');
+            } else {
+                icon.className = 'fas fa-th-large';
+                text.textContent = 'Tarjetas';
+                localStorage.setItem('dashboard_view', 'cards');
+            }
+        });
+    }
 }
 
 // Importación por carpetas (sin comprimir) usando webkitdirectory
